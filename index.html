@@ -137,6 +137,21 @@
                             </select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label>Tipo de Serviço</label>
+                        <select id="taskType" required>
+                            <option value="" disabled selected>Selecione o Serviço</option>
+                            <option value="Rompimento de fibra">Rompimento de fibra</option>
+                            <option value="Manutenção de cto">Manutenção de cto</option>
+                            <option value="Manutenção de bakcbone">Manutenção de bakcbone</option>
+                            <option value="Virada de sinal">Virada de sinal</option>
+                            <option value="Montagem de CTO">Montagem de CTO</option>
+                            <option value="Montagem de DIO">Montagem de DIO</option>
+                            <option value="Caixa sem sinal">Caixa sem sinal</option>
+                            <option value="Fibra atenuada">Fibra atenuada</option>
+                            <option value="Outros">Outros...</option>
+                        </select>
+                    </div>
                     <div class="form-group row">
                         <div class="col">
                             <label>Data de Início</label>
@@ -212,7 +227,7 @@
                 <button class="btn btn-primary w-full" style="margin-bottom: 1rem;" onclick="openNewTaskModal(document.getElementById('dayModal').getAttribute('data-current-date'))">
                     + Adicionar Demanda Neste Dia
                 </button>
-                <div id="dayModalBody" style="max-height: 50vh; overflow-y: auto; padding-right: 0.5rem;">
+                <div id="dayModalBody" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- Cards injetados via JS -->
                 </div>
             </div>

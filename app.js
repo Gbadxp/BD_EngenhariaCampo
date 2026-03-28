@@ -52,6 +52,21 @@ function toggleTheme() {
     }
 }
 
+function getServiceColor(typeStr) {
+    if (!typeStr) return "var(--primary)";
+    const map = {
+        "Rompimento de fibra": "#dc2626",
+        "Manutenção de cto": "#f97316",
+        "Manutenção de bakcbone": "#9333ea",
+        "Virada de sinal": "#0ea5e9",
+        "Montagem de CTO": "#16a34a",
+        "Montagem de DIO": "#84cc16",
+        "Caixa sem sinal": "#ca8a04",
+        "Fibra atenuada": "#db2777"
+    };
+    return map[typeStr] || "var(--primary)";
+}
+
 // Global Firebase Realtime Listener
 function listenForChanges() {
     // 1. Listen for Teams
@@ -333,6 +348,7 @@ function renderListView(filteredTasks, container) {
                     <div style="display:flex; flex-direction:column; gap:0.4rem;">
                         <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main); max-width:max-content;">${team.name}</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">👤 Gestor: ${task.manager || 'Não Definido'}</span>
+                        <span style="font-size:0.75rem; color:${getServiceColor(task.taskType)}; font-weight:700;">🛠️ ${task.taskType || 'Outros'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:flex-end;">
                         <span style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
@@ -406,12 +422,14 @@ function renderCalendarView(filteredTasks, container) {
         
         cellTasks.forEach(task => {
             const team = initialTeams.find(t => t.id === task.teamId);
-            let sColor = "var(--status-pending)";
-            if (task.status === 'progress') sColor = "var(--status-progress)";
-            if (task.status === 'done') sColor = "var(--status-done)";
+            let statusChar = "🟡";
+            if (task.status === 'progress') statusChar = "🔵";
+            if (task.status === 'done') statusChar = "🟢";
+            
+            let sColor = getServiceColor(task.taskType);
             
             // Opens Detail Modal; event.stopPropagation prevents the DayModal cell click from triggering
-            chipsHtml += `<div class="cal-task-chip" style="border-left-color: ${sColor};" title="Clique para ver detalhes" onclick="event.stopPropagation(); openTaskDetails('${task.id}')">E${team.id}: ${task.location}</div>`;
+            chipsHtml += `<div class="cal-task-chip" style="border-left-color: ${sColor};" title="${task.taskType || 'Serviço'}" onclick="event.stopPropagation(); openTaskDetails('${task.id}')"><span style="font-size:9px; margin-right:4px;">${statusChar}</span>E${team.id}: ${task.location}</div>`;
         });
         
         html += `
@@ -550,7 +568,7 @@ function exportToCSV() {
     }
     
     const csvRows = [];
-    const headers = ['ID', 'Equipe', 'Gestor', 'Data', 'Início Previsto', 'Término Previsto', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
+    const headers = ['ID', 'Equipe', 'Gestor', 'Tipo Serviço', 'Data', 'Início Previsto', 'Término Previsto', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
     csvRows.push(headers.join(';'));
     
     tasks.forEach(t => {
@@ -571,6 +589,7 @@ function exportToCSV() {
             t.id,
             escapeCSV(teamName),
             escapeCSV(t.manager),
+            escapeCSV(t.taskType),
             t.date,
             escapeCSV(t.dateEnd),
             escapeCSV(t.timeStart),
@@ -702,6 +721,7 @@ function openNewTaskModal(forcedDate = null) {
     document.getElementById('taskForm').reset();
     document.getElementById('taskId').value = '';
     if(document.getElementById('taskManager')) document.getElementById('taskManager').value = '';
+    if(document.getElementById('taskType')) document.getElementById('taskType').value = '';
     
     // Check if new html inject works properly
     if(document.getElementById('taskTimeStart')) {
@@ -735,6 +755,7 @@ function openEditTaskModal(idStr) {
     document.getElementById('taskId').value = task.id;
     document.getElementById('taskTeam').value = task.teamId;
     if(document.getElementById('taskManager')) document.getElementById('taskManager').value = task.manager || '';
+    if(document.getElementById('taskType')) document.getElementById('taskType').value = task.taskType || '';
     document.getElementById('taskDate').value = task.date;
     if(document.getElementById('taskDateEnd')) document.getElementById('taskDateEnd').value = task.dateEnd || '';
     if(document.getElementById('taskTimeStart')) document.getElementById('taskTimeStart').value = task.timeStart || '';
@@ -761,6 +782,7 @@ function closeModal() {
     if (form) form.reset();
     document.getElementById('taskId').value = '';
     if(document.getElementById('taskManager')) document.getElementById('taskManager').value = '';
+    if(document.getElementById('taskType')) document.getElementById('taskType').value = '';
     if(document.getElementById('taskTimeStart')) {
         document.getElementById('taskTimeStart').value = '';
         document.getElementById('taskTimeEnd').value = '';
@@ -780,6 +802,9 @@ function handleTaskSubmit(e) {
     const managerEl = document.getElementById('taskManager');
     const manager = managerEl ? managerEl.value : '';
     
+    const taskTypeEl = document.getElementById('taskType');
+    const taskType = taskTypeEl ? (taskTypeEl.value || 'Outros') : 'Outros';
+    
     const dateEndEl = document.getElementById('taskDateEnd');
     const dateEnd = dateEndEl && dateEndEl.value ? dateEndEl.value : date;
     
@@ -798,13 +823,13 @@ function handleTaskSubmit(e) {
     if (editingId) {
         // Update existing task via Firebase
         db.ref('tasks/' + editingId).update({
-            teamId, manager, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
+            teamId, manager, taskType, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
         }).then(() => closeModal()).catch(err => alert("Erro ao editar: " + err.message));
     } else {
         // Create new task via Firebase
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         const newTask = {
-            id: newId, teamId, manager, date, dateEnd, timeStart, timeEnd,
+            id: newId, teamId, manager, taskType, date, dateEnd, timeStart, timeEnd,
             location, coordinates, contact, description, status: 'pending'
         };
         db.ref('tasks/' + newId).set(newTask)
@@ -847,6 +872,7 @@ function openTaskDetails(taskId) {
             <div style="display:flex; flex-direction:column; gap:0.4rem;">
                 <span style="font-size:0.9rem; font-weight:600; background:var(--bg-main); padding:0.3rem 0.8rem; border-radius:6px; color:var(--text-main); max-width:max-content;">${team.name}</span>
                 <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Gestor: ${task.manager || 'Não Definido'}</span>
+                <span style="font-size:0.8rem; color:${getServiceColor(task.taskType)}; font-weight:700;">🛠️ ${task.taskType || 'Outros'}</span>
             </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end;">
                 <span style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
@@ -940,7 +966,9 @@ function openDayModal(dateStr) {
                         <div style="display:flex; flex-direction:column; gap:0.4rem;">
                             <span style="font-size:0.85rem; font-weight:600; color:var(--text-main); background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; max-width:max-content;">${team.name}</span>
                             <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Gestor: ${task.manager || 'Não Definido'}</span>
+                            <span style="font-size:0.75rem; color:${getServiceColor(task.taskType)}; font-weight:700;">🛠️ ${task.taskType || 'Outros'}</span>
                         </div>
+                        <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="event.stopPropagation(); openEditTaskModal('${task.id}')">✏️ Editar</button>
                     </div>
                 </div>
             `;
