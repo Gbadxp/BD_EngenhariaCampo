@@ -46,6 +46,9 @@
                     <button class="nav-item" onclick="openTeamManager()" style="justify-content:center; border:1px solid var(--primary); background:var(--bg-main); color:var(--primary); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;">
                         ⚙️ Gerenciar Equipes
                     </button>
+                    <button class="nav-item" onclick="openManagerManager()" style="justify-content:center; border:1px solid var(--primary); background:var(--bg-main); color:var(--primary); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;">
+                        👔 Gerenciar Gestores
+                    </button>
                     <button class="nav-item" onclick="exportToCSV()" style="justify-content:center; border:1px solid var(--border-color); background:var(--bg-main); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;" title="Baixar relatório completo em Excel">
                         📥 Exportar Excel
                     </button>
@@ -120,11 +123,19 @@
                     <!-- Hidden field acting as ID if editing -->
                     <input type="hidden" id="taskId">
                     
-                    <div class="form-group">
-                        <label>Equipe Responsável</label>
-                        <select id="taskTeam" required>
-                            <!-- Options injected -->
-                        </select>
+                    <div class="form-group row">
+                        <div class="col">
+                            <label>Equipe Responsável</label>
+                            <select id="taskTeam" required>
+                                <!-- Options injected -->
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label>Gestor Responsável</label>
+                            <select id="taskManager" required>
+                                <option value="" disabled selected>Carregando gestores...</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group row">
                         <div class="col">
@@ -245,6 +256,44 @@
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeTeamForm()">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Salvar Equipe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Managers Manager Modal -->
+    <div class="modal-overlay" id="managerManagerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Gerenciar Gestores</h3>
+                <button class="close-btn" onclick="closeManagerManager()">✕</button>
+            </div>
+            <div class="modal-body">
+                <button class="btn btn-primary w-full" style="margin-bottom: 1.5rem;" onclick="openManagerForm()">+ Adicionar Novo Gestor</button>
+                <div id="managersListContainer" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manager Form Modal -->
+    <div class="modal-overlay" id="managerFormModal" style="z-index: 1010;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="managerFormTitle">Novo Gestor</h3>
+                <button class="close-btn" onclick="closeManagerForm()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="managerForm" onsubmit="handleManagerSubmit(event)">
+                    <input type="hidden" id="editManagerId">
+                    <div class="form-group">
+                        <label>Nome do Gestor Responsável</label>
+                        <input type="text" id="managerNameInput" required placeholder="Ex: João da Silva">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeManagerForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Gestor</button>
                     </div>
                 </form>
             </div>

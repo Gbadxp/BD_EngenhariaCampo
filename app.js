@@ -16,6 +16,7 @@ const db = firebase.database();
 
 let tasks = [];
 let initialTeams = []; // Transformed from static data.js into dynamic global array synced with Firebase
+let initialManagers = []; // Dynamic array of Gestor Responsável
 let currentView = 'geral'; 
 let currentDisplayMode = 'list';
 let currentFilter = 'all';
@@ -92,6 +93,29 @@ function listenForChanges() {
         renderView(); 
     });
 
+    // 1b. Listen for Managers
+    db.ref('managers').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            initialManagers = Object.values(data);
+        } else {
+            const seedManagers = [
+                { id: "1", name: "GEORGE GOMES" },
+                { id: "2", name: "ALEX ALVES" },
+                { id: "3", name: "ANDERSON FREITAS" },
+                { id: "4", name: "LUIS DIOGENES" },
+                { id: "5", name: "DIEGO MATIAS" }
+            ];
+            seedManagers.forEach(m => db.ref('managers/' + m.id).set(m));
+            initialManagers = seedManagers;
+        }
+        renderManagerOptions();
+        if(document.getElementById('managerManagerModal') && document.getElementById('managerManagerModal').classList.contains('active')){
+            renderManagerList();
+        }
+        renderView();
+    });
+
     // 2. Listen for Tasks
     db.ref('tasks').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -166,6 +190,27 @@ function renderSidebarTeams() {
         details.appendChild(navContainer);
         list.appendChild(details);
         select.appendChild(optGroup);
+    }
+}
+
+function renderManagerOptions() {
+    const select = document.getElementById('taskManager');
+    if (!select) return;
+    
+    // Store current selection if any
+    const currentVal = select.value;
+    
+    select.innerHTML = '<option value="" disabled selected>Selecione o Gestor</option>';
+    initialManagers.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.name; // Keep saving by name for compatibility with old snapshot tasks!
+        opt.innerText = m.name;
+        select.appendChild(opt);
+    });
+    
+    // Restore selection natively if available
+    if (currentVal && initialManagers.find(m => m.name === currentVal)) {
+        select.value = currentVal;
     }
 }
 
@@ -285,8 +330,9 @@ function renderListView(filteredTasks, container) {
                 <p style="font-size:0.95rem; color:var(--text-muted); margin-bottom:1.5rem; flex:1;">${task.description}</p>
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--border-color); padding-top:1rem; margin-bottom: 1rem;">
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main);">${team.name}</span>
+                    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                        <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main); max-width:max-content;">${team.name}</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">👤 Gestor: ${task.manager || 'Não Definido'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:flex-end;">
                         <span style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
@@ -504,7 +550,7 @@ function exportToCSV() {
     }
     
     const csvRows = [];
-    const headers = ['ID', 'Equipe', 'Data', 'Início Previsto', 'Término Previsto', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
+    const headers = ['ID', 'Equipe', 'Gestor', 'Data', 'Início Previsto', 'Término Previsto', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
     csvRows.push(headers.join(';'));
     
     tasks.forEach(t => {
@@ -524,6 +570,7 @@ function exportToCSV() {
         const row = [
             t.id,
             escapeCSV(teamName),
+            escapeCSV(t.manager),
             t.date,
             escapeCSV(t.dateEnd),
             escapeCSV(t.timeStart),
@@ -654,6 +701,7 @@ function openNewTaskModal(forcedDate = null) {
     
     document.getElementById('taskForm').reset();
     document.getElementById('taskId').value = '';
+    if(document.getElementById('taskManager')) document.getElementById('taskManager').value = '';
     
     // Check if new html inject works properly
     if(document.getElementById('taskTimeStart')) {
@@ -686,6 +734,7 @@ function openEditTaskModal(idStr) {
     
     document.getElementById('taskId').value = task.id;
     document.getElementById('taskTeam').value = task.teamId;
+    if(document.getElementById('taskManager')) document.getElementById('taskManager').value = task.manager || '';
     document.getElementById('taskDate').value = task.date;
     if(document.getElementById('taskDateEnd')) document.getElementById('taskDateEnd').value = task.dateEnd || '';
     if(document.getElementById('taskTimeStart')) document.getElementById('taskTimeStart').value = task.timeStart || '';
@@ -711,6 +760,7 @@ function closeModal() {
     const form = document.getElementById('taskForm');
     if (form) form.reset();
     document.getElementById('taskId').value = '';
+    if(document.getElementById('taskManager')) document.getElementById('taskManager').value = '';
     if(document.getElementById('taskTimeStart')) {
         document.getElementById('taskTimeStart').value = '';
         document.getElementById('taskTimeEnd').value = '';
@@ -726,6 +776,9 @@ function handleTaskSubmit(e) {
     
     const teamId = parseInt(document.getElementById('taskTeam').value);
     const date = document.getElementById('taskDate').value;
+    
+    const managerEl = document.getElementById('taskManager');
+    const manager = managerEl ? managerEl.value : '';
     
     const dateEndEl = document.getElementById('taskDateEnd');
     const dateEnd = dateEndEl && dateEndEl.value ? dateEndEl.value : date;
@@ -745,13 +798,13 @@ function handleTaskSubmit(e) {
     if (editingId) {
         // Update existing task via Firebase
         db.ref('tasks/' + editingId).update({
-            teamId, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
+            teamId, manager, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
         }).then(() => closeModal()).catch(err => alert("Erro ao editar: " + err.message));
     } else {
         // Create new task via Firebase
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         const newTask = {
-            id: newId, teamId, date, dateEnd, timeStart, timeEnd,
+            id: newId, teamId, manager, date, dateEnd, timeStart, timeEnd,
             location, coordinates, contact, description, status: 'pending'
         };
         db.ref('tasks/' + newId).set(newTask)
@@ -790,8 +843,11 @@ function openTaskDetails(taskId) {
             ` : ''}
             <p style="font-size:1rem; color:var(--text-muted); margin-top:0.8rem; line-height:1.5;">${task.description}</p>
         </div>
-        <div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; border-top:1px dashed var(--border-color); padding-top:1rem;">
-            <span style="font-size:0.9rem; font-weight:600; background:var(--bg-main); padding:0.3rem 0.8rem; border-radius:6px; color:var(--text-main);">${team.name}</span>
+        <div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed var(--border-color); padding-top:1rem;">
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                <span style="font-size:0.9rem; font-weight:600; background:var(--bg-main); padding:0.3rem 0.8rem; border-radius:6px; color:var(--text-main); max-width:max-content;">${team.name}</span>
+                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Gestor: ${task.manager || 'Não Definido'}</span>
+            </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end;">
                 <span style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
                 ${task.timeStart ? `<span style="font-size:0.85rem; color:var(--primary); font-weight:600; margin-top:0.3rem;">⏰ ${task.timeStart} ${task.timeEnd ? ' às '+task.timeEnd : ''}</span>` : ''}
@@ -880,8 +936,11 @@ function openDayModal(dateStr) {
                         </div>
                     ` : ''}
                     <p style="font-size:0.95rem; color:var(--text-muted); margin-bottom: 1rem;">${task.description}</p>
-                    <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border-color); padding-top:0.8rem;">
-                        <span style="font-size:0.85rem; font-weight:600; color:var(--text-main); background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px;">${team.name}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed var(--border-color); padding-top:0.8rem;">
+                        <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                            <span style="font-size:0.85rem; font-weight:600; color:var(--text-main); background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; max-width:max-content;">${team.name}</span>
+                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Gestor: ${task.manager || 'Não Definido'}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -998,5 +1057,73 @@ function handleTeamSubmit(e) {
 function deleteTeam(id) {
     if(confirm("Excluir esta equipe permanentemente? (Ficará sem nome nas demandas antigas)")) {
         db.ref('teams/' + id).remove();
+    }
+}
+
+// -------------------- //
+// MANAGER CRM DIRECTORIES //
+// -------------------- //
+function openManagerManager() {
+    document.getElementById('managerManagerModal').classList.add('active');
+    renderManagerList();
+}
+
+function closeManagerManager() {
+    document.getElementById('managerManagerModal').classList.remove('active');
+}
+
+function renderManagerList() {
+    const list = document.getElementById('managersListContainer');
+    list.innerHTML = '';
+    
+    initialManagers.forEach(manager => {
+        list.innerHTML += `
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="font-size:1rem; color:var(--text-main); margin:0;">${manager.name}</h4>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-secondary" style="padding:0.4rem; border:none; background:rgba(37,99,235,0.1); color:var(--primary);" onclick="openManagerForm('${manager.id}')">✏️ Editar</button>
+                    <button class="btn" style="padding:0.4rem; border:none; background:#fee2e2; color:#ef4444;" onclick="deleteManager('${manager.id}')">✕ Excluir</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function openManagerForm(managerIdStr = null) {
+    document.getElementById('managerFormModal').classList.add('active');
+    document.getElementById('managerForm').reset();
+    document.getElementById('editManagerId').value = '';
+    document.getElementById('managerFormTitle').innerText = 'Novo Gestor';
+    
+    if (managerIdStr) {
+        const manager = initialManagers.find(m => m.id.toString() === managerIdStr.toString());
+        if (manager) {
+            document.getElementById('editManagerId').value = manager.id;
+            document.getElementById('managerNameInput').value = manager.name;
+            document.getElementById('managerFormTitle').innerText = 'Editar Gestor';
+        }
+    }
+}
+
+function closeManagerForm() {
+    document.getElementById('managerFormModal').classList.remove('active');
+}
+
+function handleManagerSubmit(e) {
+    e.preventDefault();
+    const idField = document.getElementById('editManagerId').value;
+    const name = document.getElementById('managerNameInput').value;
+    
+    if (idField) {
+        db.ref('managers/' + idField).update({ name }).then(() => closeManagerForm());
+    } else {
+        const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
+        db.ref('managers/' + newId).set({ id: newId, name }).then(() => closeManagerForm());
+    }
+}
+
+function deleteManager(id) {
+    if(confirm("Excluir este gestor permanentemente? (Isso não alterará o nome nas demandas antigas já finalizadas)")) {
+        db.ref('managers/' + id).remove();
     }
 }
