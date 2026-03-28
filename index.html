@@ -43,6 +43,9 @@
                     <svg id="toolsToggleIcon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted); transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <nav class="sidebar-nav" id="toolsNavList" style="margin-top: 0.5rem; display: flex; flex-direction: column; overflow: hidden; transition: max-height 0.3s ease; max-height: 1000px;">
+                    <button class="nav-item" onclick="openTeamManager()" style="justify-content:center; border:1px solid var(--primary); background:var(--bg-main); color:var(--primary); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;">
+                        ⚙️ Gerenciar Equipes
+                    </button>
                     <button class="nav-item" onclick="exportToCSV()" style="justify-content:center; border:1px solid var(--border-color); background:var(--bg-main); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;" title="Baixar relatório completo em Excel">
                         📥 Exportar Excel
                     </button>
@@ -117,16 +120,30 @@
                     <!-- Hidden field acting as ID if editing -->
                     <input type="hidden" id="taskId">
                     
+                    <div class="form-group">
+                        <label>Equipe Responsável</label>
+                        <select id="taskTeam" required>
+                            <!-- Options injected -->
+                        </select>
+                    </div>
                     <div class="form-group row">
                         <div class="col">
-                            <label>Equipe Responsável</label>
-                            <select id="taskTeam" required>
-                                <!-- Options injected -->
-                            </select>
+                            <label>Data de Início</label>
+                            <input type="date" id="taskDate" required>
                         </div>
                         <div class="col">
-                            <label>Data Agendada</label>
-                            <input type="date" id="taskDate" required>
+                            <label>Data de Término (Opcional)</label>
+                            <input type="date" id="taskDateEnd" title="Deixe vazio se for apenas um dia.">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col">
+                            <label>Horário Início (Opcional)</label>
+                            <input type="time" id="taskTimeStart">
+                        </div>
+                        <div class="col">
+                            <label>Horário Término (Opcional)</label>
+                            <input type="time" id="taskTimeEnd">
                         </div>
                     </div>
                     
@@ -180,14 +197,61 @@
                 <h3 id="dayModalTitle">Agendamentos do Dia</h3>
                 <button class="close-btn" onclick="closeDayModal()">✕</button>
             </div>
-            <div class="modal-body" id="dayModalBody" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
-                <!-- Cards injetados via JS -->
+            <div class="modal-body">
+                <button class="btn btn-primary w-full" style="margin-bottom: 1rem;" onclick="openNewTaskModal(document.getElementById('dayModal').getAttribute('data-current-date'))">
+                    + Adicionar Demanda Neste Dia
+                </button>
+                <div id="dayModalBody" style="max-height: 50vh; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- Cards injetados via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teams Manager Modal -->
+    <div class="modal-overlay" id="teamManagerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Gerenciar Equipes</h3>
+                <button class="close-btn" onclick="closeTeamManager()">✕</button>
+            </div>
+            <div class="modal-body">
+                <button class="btn btn-primary w-full" style="margin-bottom: 1.5rem;" onclick="openTeamForm()">+ Adicionar Nova Equipe</button>
+                <div id="teamsListContainer" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- JS injected -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Form Modal -->
+    <div class="modal-overlay" id="teamFormModal" style="z-index: 1010;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="teamFormTitle">Nova Equipe</h3>
+                <button class="close-btn" onclick="closeTeamForm()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="teamForm" onsubmit="handleTeamSubmit(event)">
+                    <input type="hidden" id="editTeamId">
+                    <div class="form-group">
+                        <label>Nome do Técnico / Equipe</label>
+                        <input type="text" id="teamNameInput" required placeholder="Ex: João e Maria">
+                    </div>
+                    <div class="form-group">
+                        <label>Grupo / Especialidade</label>
+                        <input type="text" id="teamGroupInput" required placeholder="Ex: Linheiros - Norte">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeTeamForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Equipe</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

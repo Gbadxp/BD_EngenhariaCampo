@@ -15,6 +15,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let tasks = [];
+let initialTeams = []; // Transformed from static data.js into dynamic global array synced with Firebase
 let currentView = 'geral'; 
 let currentDisplayMode = 'list';
 let currentFilter = 'all';
@@ -52,6 +53,46 @@ function toggleTheme() {
 
 // Global Firebase Realtime Listener
 function listenForChanges() {
+    // 1. Listen for Teams
+    db.ref('teams').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            initialTeams = Object.values(data);
+        } else {
+            // Seed DB on the very first empty run with core 19 architecture
+            const coreSeed = [
+                { id: 1, name: "Marcos Ageu", group: "Linheiros - Porto Velho/RO" },
+                { id: 2, name: "Anderson Aparecido", group: "Linheiros - Porto Velho/RO" },
+                { id: 3, name: "Francisco Rocha", group: "Linheiros - Porto Velho/RO" },
+                { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Porto Velho/RO" },
+                { id: 5, name: "André", group: "Linheiros - Porto Velho/RO" },
+                { id: 6, name: "Albertino", group: "Linheiros - Porto Velho/RO" },
+                { id: 7, name: "Huilian Wilkens", group: "Linheiros - Porto Velho/RO" },
+                { id: 8, name: "Manoel Pinto", group: "Linheiros - Porto Velho/RO" },
+                { id: 9, name: "Airton Freire", group: "Linheiros - Porto Velho/RO" },
+                { id: 10, name: "Ronaldo", group: "Linheiros - Porto Velho/RO" },
+                { id: 11, name: "Renan", group: "Linheiros - Porto Velho/RO" },
+                { id: 12, name: "José Muniz / João Maidson", group: "Emendadores - Porto Velho/RO" },
+                { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores - Porto Velho/RO" },
+                { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores - Porto Velho/RO" },
+                { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores - Porto Velho/RO" },
+                { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores - Porto Velho/RO" },
+                { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores - Porto Velho/RO" },
+                { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
+                { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" }
+            ];
+            coreSeed.forEach(t => db.ref('teams/' + t.id).set(t));
+            initialTeams = coreSeed;
+        }
+        renderSidebarTeams();
+        if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
+            renderTeamManagerList();
+        }
+        // Force timeline re-render if team names changed
+        renderView(); 
+    });
+
+    // 2. Listen for Tasks
     db.ref('tasks').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -73,18 +114,59 @@ function renderSidebarTeams() {
     list.innerHTML = '';
     select.innerHTML = '<option value="" disabled selected>Selecione a equipe</option>';
     
+    // Create grouped data
+    const groups = {};
     initialTeams.forEach(team => {
-        const btn = document.createElement('button');
-        btn.className = 'nav-item';
-        btn.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary); margin-right:4px;"></span> ${team.name}`;
-        btn.onclick = (e) => switchView(team.id, btn);
-        list.appendChild(btn);
-        
-        const opt = document.createElement('option');
-        opt.value = team.id;
-        opt.innerText = team.name;
-        select.appendChild(opt);
+        const gName = team.group || "Geral";
+        if (!groups[gName]) groups[gName] = [];
+        groups[gName].push(team);
     });
+    
+    for (const groupName in groups) {
+        // Form OptGroup
+        const optGroup = document.createElement('optgroup');
+        optGroup.label = groupName;
+        
+        // Natively Retractable HTML5 container
+        const details = document.createElement('details');
+        details.style.marginBottom = '0.5rem';
+        
+        const summary = document.createElement('summary');
+        summary.style.fontSize = '0.70rem';
+        summary.style.fontWeight = '700';
+        summary.style.color = 'var(--text-muted)';
+        summary.style.textTransform = 'uppercase';
+        summary.style.letterSpacing = '0.05em';
+        summary.style.padding = '0.5rem 0';
+        summary.style.cursor = 'pointer';
+        summary.style.outline = 'none';
+        summary.style.userSelect = 'none';
+        summary.innerText = groupName;
+        details.appendChild(summary);
+        
+        const navContainer = document.createElement('div');
+        navContainer.style.display = 'flex';
+        navContainer.style.flexDirection = 'column';
+        navContainer.style.marginLeft = '0.5rem';
+        navContainer.style.marginTop = '0.3rem';
+        
+        groups[groupName].forEach(team => {
+            const btn = document.createElement('button');
+            btn.className = 'nav-item';
+            btn.innerHTML = `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--primary); margin-right:6px;"></span> ${team.name}`;
+            btn.onclick = (e) => switchView(team.id, btn);
+            navContainer.appendChild(btn);
+            
+            const opt = document.createElement('option');
+            opt.value = team.id;
+            opt.innerText = team.name;
+            optGroup.appendChild(opt);
+        });
+        
+        details.appendChild(navContainer);
+        list.appendChild(details);
+        select.appendChild(optGroup);
+    }
 }
 
 function switchView(viewId, element) {
@@ -206,7 +288,10 @@ function renderListView(filteredTasks, container) {
                     <div style="display:flex; align-items:center; gap:0.5rem;">
                         <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main);">${team.name}</span>
                     </div>
-                    <span style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr}</span>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                        <span style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
+                        ${task.timeStart ? `<span style="font-size:0.8rem; color:var(--primary); font-weight:600; margin-top:0.2rem;">⏰ ${task.timeStart} ${task.timeEnd ? ' às '+task.timeEnd : ''}</span>` : ''}
+                    </div>
                 </div>
 
                 <div style="display:flex; gap:0.5rem;">
@@ -266,7 +351,11 @@ function renderCalendarView(filteredTasks, container) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isToday = (dateStr === todayStr) ? 'today' : '';
         
-        let cellTasks = filteredTasks.filter(t => t.date === dateStr);
+        // Match tasks that span strictly over the day
+        let cellTasks = filteredTasks.filter(t => {
+            const end = t.dateEnd || t.date;
+            return dateStr >= t.date && dateStr <= end;
+        });
         let chipsHtml = '';
         
         cellTasks.forEach(task => {
@@ -415,7 +504,7 @@ function exportToCSV() {
     }
     
     const csvRows = [];
-    const headers = ['ID', 'Equipe', 'Data', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
+    const headers = ['ID', 'Equipe', 'Data', 'Início Previsto', 'Término Previsto', 'Local/Endereço', 'Status', 'Cliente/Contato', 'Coordenadas(GPS)', 'Descrição'];
     csvRows.push(headers.join(';'));
     
     tasks.forEach(t => {
@@ -436,6 +525,9 @@ function exportToCSV() {
             t.id,
             escapeCSV(teamName),
             t.date,
+            escapeCSV(t.dateEnd),
+            escapeCSV(t.timeStart),
+            escapeCSV(t.timeEnd),
             escapeCSV(t.location),
             statusStr,
             escapeCSV(t.contact),
@@ -556,12 +648,19 @@ function deleteTask(taskId) {
 // -------------------- //
 
 // Task Creation Modals 
-function openNewTaskModal() {
+function openNewTaskModal(forcedDate = null) {
     const modal = document.getElementById('taskModal');
     if (modal) modal.classList.add('active');
     
     document.getElementById('taskForm').reset();
     document.getElementById('taskId').value = '';
+    
+    // Check if new html inject works properly
+    if(document.getElementById('taskTimeStart')) {
+        document.getElementById('taskTimeStart').value = '';
+        document.getElementById('taskTimeEnd').value = '';
+        document.getElementById('taskDateEnd').value = '';
+    }
     
     document.querySelector('#taskModal .modal-header h3').innerText = 'Agendar Nova Demanda';
     document.querySelector('#taskModal button[type="submit"]').innerText = 'Salvar Demanda';
@@ -573,9 +672,12 @@ function openNewTaskModal() {
         teamSelect.value = '';
     }
     
-    const today = new Date().toISOString().split('T')[0];
     const dateInput = document.getElementById('taskDate');
-    if (dateInput) dateInput.value = today;
+    if (dateInput) {
+        if(forcedDate) dateInput.value = forcedDate;
+        else dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    closeDayModal(); // Safely exit Day Modal to prioritize Form
 }
 
 function openEditTaskModal(idStr) {
@@ -585,6 +687,9 @@ function openEditTaskModal(idStr) {
     document.getElementById('taskId').value = task.id;
     document.getElementById('taskTeam').value = task.teamId;
     document.getElementById('taskDate').value = task.date;
+    if(document.getElementById('taskDateEnd')) document.getElementById('taskDateEnd').value = task.dateEnd || '';
+    if(document.getElementById('taskTimeStart')) document.getElementById('taskTimeStart').value = task.timeStart || '';
+    if(document.getElementById('taskTimeEnd')) document.getElementById('taskTimeEnd').value = task.timeEnd || '';
     document.getElementById('taskLocation').value = task.location;
     document.getElementById('taskCoordinates').value = task.coordinates || '';
     document.getElementById('taskContact').value = task.contact || '';
@@ -606,10 +711,14 @@ function closeModal() {
     const form = document.getElementById('taskForm');
     if (form) form.reset();
     document.getElementById('taskId').value = '';
+    if(document.getElementById('taskTimeStart')) {
+        document.getElementById('taskTimeStart').value = '';
+        document.getElementById('taskTimeEnd').value = '';
+        document.getElementById('taskDateEnd').value = '';
+    }
     
-    const today = new Date().toISOString().split('T')[0];
     const dateInput = document.getElementById('taskDate');
-    if (dateInput) dateInput.value = today;
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 }
 
 function handleTaskSubmit(e) {
@@ -617,6 +726,15 @@ function handleTaskSubmit(e) {
     
     const teamId = parseInt(document.getElementById('taskTeam').value);
     const date = document.getElementById('taskDate').value;
+    
+    const dateEndEl = document.getElementById('taskDateEnd');
+    const dateEnd = dateEndEl && dateEndEl.value ? dateEndEl.value : date;
+    
+    const timeStartEl = document.getElementById('taskTimeStart');
+    const timeStart = timeStartEl ? timeStartEl.value : '';
+    const timeEndEl = document.getElementById('taskTimeEnd');
+    const timeEnd = timeEndEl ? timeEndEl.value : '';
+    
     const location = document.getElementById('taskLocation').value;
     const coordinates = document.getElementById('taskCoordinates').value;
     const contact = document.getElementById('taskContact').value;
@@ -627,22 +745,15 @@ function handleTaskSubmit(e) {
     if (editingId) {
         // Update existing task via Firebase
         db.ref('tasks/' + editingId).update({
-            teamId, date, location, coordinates, contact, description
+            teamId, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
         }).then(() => closeModal()).catch(err => alert("Erro ao editar: " + err.message));
     } else {
         // Create new task via Firebase
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         const newTask = {
-            id: newId,
-            teamId,
-            date,
-            location,
-            coordinates,
-            contact,
-            description,
-            status: 'pending'
+            id: newId, teamId, date, dateEnd, timeStart, timeEnd,
+            location, coordinates, contact, description, status: 'pending'
         };
-        
         db.ref('tasks/' + newId).set(newTask)
             .then(() => closeModal())
             .catch(err => alert("Erro ao cadastrar: " + err.message));
@@ -681,7 +792,10 @@ function openTaskDetails(taskId) {
         </div>
         <div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; border-top:1px dashed var(--border-color); padding-top:1rem;">
             <span style="font-size:0.9rem; font-weight:600; background:var(--bg-main); padding:0.3rem 0.8rem; border-radius:6px; color:var(--text-main);">${team.name}</span>
-            <span style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr}</span>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
+                ${task.timeStart ? `<span style="font-size:0.85rem; color:var(--primary); font-weight:600; margin-top:0.3rem;">⏰ ${task.timeStart} ${task.timeEnd ? ' às '+task.timeEnd : ''}</span>` : ''}
+            </div>
         </div>
         <div class="form-actions" style="margin-top:0; display:flex; gap:0.5rem; justify-content:flex-end;">
             <button class="btn btn-secondary w-full" style="flex:1;" onclick="cycleStatusAndRefreshDetails('${task.id}')">↻ Alternar Status</button>
@@ -721,7 +835,10 @@ function deleteTaskAndCloseDetails(taskId) {
 // DAY EXPANSION MODAL  //
 // -------------------- //
 function openDayModal(dateStr) {
-    let dayTasks = tasks.filter(t => t.date === dateStr);
+    let dayTasks = tasks.filter(t => {
+        const end = t.dateEnd || t.date;
+        return dateStr >= t.date && dateStr <= end;
+    });
     
     if (currentView !== 'geral') {
         dayTasks = dayTasks.filter(t => t.teamId === currentView);
@@ -789,7 +906,7 @@ function toggleSection(listId, iconId) {
     
     // Check if collapsed via max-height inline style
     if (list.style.maxHeight === '0px' || list.style.display === 'none') {
-        list.style.maxHeight = '1000px';
+        list.style.maxHeight = '4000px';
         list.style.display = 'flex';
         icon.style.transform = 'rotate(0deg)';
     } else {
@@ -802,7 +919,84 @@ function toggleSection(listId, iconId) {
 function updateDateDisplay() {
     const display = document.getElementById('currentDateDisplay');
     if (!display) return;
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const dateStr = new Date().toLocaleDateString('pt-BR', options);
-    display.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    const now = new Date();
+    display.innerText = now.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+// -------------------- //
+// TEAM CRM DIRECTORIES //
+// -------------------- //
+function openTeamManager() {
+    document.getElementById('teamManagerModal').classList.add('active');
+    renderTeamManagerList();
+}
+
+function closeTeamManager() {
+    document.getElementById('teamManagerModal').classList.remove('active');
+}
+
+function renderTeamManagerList() {
+    const list = document.getElementById('teamsListContainer');
+    list.innerHTML = '';
+    
+    initialTeams.forEach(team => {
+        list.innerHTML += `
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="font-size:1rem; color:var(--text-main); margin-bottom:0.3rem;">${team.name}</h4>
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:12px;">${team.group || 'Geral'}</span>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-secondary" style="padding:0.4rem; border:none; background:rgba(37,99,235,0.1); color:var(--primary);" onclick="openTeamForm('${team.id}')">✏️ Editar</button>
+                    <button class="btn" style="padding:0.4rem; border:none; background:#fee2e2; color:#ef4444;" onclick="deleteTeam('${team.id}')">✕ Excluir</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function openTeamForm(teamIdStr = null) {
+    document.getElementById('teamFormModal').classList.add('active');
+    document.getElementById('teamForm').reset();
+    document.getElementById('editTeamId').value = '';
+    document.getElementById('teamFormTitle').innerText = 'Nova Equipe';
+    
+    if (teamIdStr) {
+        const team = initialTeams.find(t => t.id.toString() === teamIdStr.toString());
+        if (team) {
+            document.getElementById('editTeamId').value = team.id;
+            document.getElementById('teamNameInput').value = team.name;
+            document.getElementById('teamGroupInput').value = team.group || '';
+            document.getElementById('teamFormTitle').innerText = 'Editar Equipe';
+        }
+    }
+}
+
+function closeTeamForm() {
+    document.getElementById('teamFormModal').classList.remove('active');
+}
+
+function handleTeamSubmit(e) {
+    e.preventDefault();
+    const idField = document.getElementById('editTeamId').value;
+    const name = document.getElementById('teamNameInput').value;
+    const group = document.getElementById('teamGroupInput').value;
+    
+    if (idField) {
+        db.ref('teams/' + idField).update({ name, group }).then(() => closeTeamForm());
+    } else {
+        const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
+        db.ref('teams/' + newId).set({ id: newId, name, group }).then(() => closeTeamForm());
+    }
+}
+
+function deleteTeam(id) {
+    if(confirm("Excluir esta equipe permanentemente? (Ficará sem nome nas demandas antigas)")) {
+        db.ref('teams/' + id).remove();
+    }
 }
