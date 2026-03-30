@@ -62,7 +62,11 @@ function getServiceColor(typeStr) {
         "Montagem de CTO": "#16a34a",
         "Montagem de DIO": "#84cc16",
         "Caixa sem sinal": "#ca8a04",
-        "Fibra atenuada": "#db2777"
+        "Fibra atenuada": "#db2777",
+        "FIBERDOCS": "#0284c7",
+        "GEOSITE": "#7c3aed",
+        "Lançamento de fibra": "#14b8a6",
+        "Caixa lotada": "#ea580c"
     };
     return map[typeStr] || "var(--primary)";
 }
@@ -95,7 +99,10 @@ function listenForChanges() {
                 { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores - Porto Velho/RO" },
                 { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores - Porto Velho/RO" },
                 { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
-                { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" }
+                { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
+                { id: 20, name: "Railton Kley", group: "Multskill" },
+                { id: 21, name: "Jhonatan Renan", group: "Multskill" },
+                { id: 22, name: "Arthur Queiroz", group: "Multskill" }
             ];
             coreSeed.forEach(t => db.ref('teams/' + t.id).set(t));
             initialTeams = coreSeed;
