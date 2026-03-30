@@ -197,6 +197,46 @@ body {
     font-size: 0.9rem;
 }
 
+.topbar-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.status-filters {
+    display: flex;
+    background: var(--bg-main);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.status-filters button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.view-toggles {
+    display: flex;
+    background: var(--bg-main);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.btn-whatsapp {
+    background: #25D366;
+    color: white;
+    border: none;
+}
+.btn-whatsapp:hover {
+    background: #1da851;
+}
+.btn-whatsapp svg, .btn-primary svg {
+    margin-right: 0.3rem;
+}
+
 .date-display {
     font-weight: 500;
     color: var(--text-muted);
@@ -491,4 +531,136 @@ body {
 
 .cal-task-chip:hover {
     filter: brightness(0.95);
+}
+
+/* =========================================
+   Responsive Design (Mobile & Tablets)
+   ========================================= */
+@media (max-width: 900px) {
+    #app {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: visible;
+    }
+    
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        max-height: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        overflow-y: visible;
+    }
+    
+    .sidebar-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .sidebar-section {
+        padding: 1rem 1rem 0;
+    }
+    
+    .sidebar-footer {
+        padding: 1rem;
+    }
+    
+    .main-content {
+        overflow-y: visible;
+    }
+    
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        position: static;
+    }
+    
+    .topbar-left {
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .topbar-right {
+        flex-direction: column;
+        width: 100%;
+        align-items: stretch !important;
+    }
+    
+    .status-filters {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.2rem;
+    }
+    
+    .view-toggles {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+    }
+    
+    .status-filters button, .view-toggles button {
+        text-align: center;
+        padding: 0.6rem 0.2rem;
+        font-size: 0.75rem;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .view-container {
+        padding: 1rem;
+    }
+    
+    .form-group.row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-group.row .col {
+        margin-bottom: 1.2rem;
+    }
+    
+    .form-group.row .col:last-child {
+        margin-bottom: 0;
+    }
+    
+    .modal {
+        max-width: 95%;
+        margin: 1rem;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .modal-body {
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    
+    .calendar-grid {
+        font-size: 0.8rem;
+    }
+    
+    .calendar-header-day {
+        padding: 0.5rem 0.2rem;
+        font-size: 0.7rem;
+    }
+    
+    .calendar-cell {
+        min-height: 80px;
+        padding: 0.3rem;
+    }
+    
+    .day-number {
+        font-size: 0.8rem;
+    }
+    
+    .cal-task-chip {
+        font-size: 0.65rem;
+        padding: 0.2rem;
+    }
 }
