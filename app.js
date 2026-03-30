@@ -325,47 +325,43 @@ function renderListView(filteredTasks, container) {
         if (task.status === 'done') { statusColor = "var(--status-done)"; statusText = "Concluído"; }
         
         html += `
-            <div style="background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color); padding:1.5rem; box-shadow:0 2px 4px rgba(0,0,0,0.02); display:flex; flex-direction:column; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
-                    <div>
-                        <span style="font-size:0.75rem; font-weight:700; color:${statusColor}; text-transform:uppercase; letter-spacing:0.05em; display:flex; align-items:center; gap:0.3rem;">
-                            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${statusColor};"></span>
-                            ${statusText}
-                        </span>
-                        <h4 style="font-size:1.1rem; font-weight:600; margin-top:0.4rem; color:var(--text-main);">${task.location}</h4>
-                        ${(task.contact || task.coordinates) ? `
-                            <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:0.8rem;">
-                                ${task.contact ? `<span title="Contato do Cliente">📞 ${task.contact}</span>` : ''}
-                                ${task.coordinates ? `<a href="https://www.google.com/maps/search/${encodeURIComponent(task.coordinates)}" target="_blank" style="color:var(--primary); text-decoration:none;" title="Ver Coordenadas no Mapa">📍 Ver no Mapa</a>` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
+            <div style="background:var(--bg-card); border-radius:10px; border:1px solid var(--border-color); padding:1rem; box-shadow:0 2px 4px rgba(0,0,0,0.02); display:flex; flex-direction:column; cursor:pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';" onclick="openTaskDetails('${task.id}')">
+                
+                <!-- 1. Status -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span style="font-size:0.75rem; font-weight:700; color:${statusColor}; text-transform:uppercase; letter-spacing:0.05em; display:flex; align-items:center; gap:0.3rem;">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${statusColor};"></span>
+                        ${statusText}
+                    </span>
                 </div>
                 
-                <p style="font-size:0.95rem; color:var(--text-muted); margin-bottom:1.5rem; flex:1;">${task.description}</p>
+                <!-- 2. Tipo de Serviço -->
+                <div style="font-size:0.85rem; color:${getServiceColor(task.taskType)}; font-weight:700; margin-bottom:0.3rem;">
+                    🛠️ ${task.taskType || 'Outros'}
+                </div>
                 
-                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--border-color); padding-top:1rem; margin-bottom: 1rem;">
-                    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                        <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main); max-width:max-content;">${team.name}</span>
-                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">👤 Gestor: ${task.manager || 'Não Definido'}</span>
-                        <span style="font-size:0.75rem; color:${getServiceColor(task.taskType)}; font-weight:700;">🛠️ ${task.taskType || 'Outros'}</span>
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                        <span style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
-                        ${task.timeStart ? `<span style="font-size:0.8rem; color:var(--primary); font-weight:600; margin-top:0.2rem;">⏰ ${task.timeStart} ${task.timeEnd ? ' às '+task.timeEnd : ''}</span>` : ''}
+                <!-- 3. Endereço com Coordenadas -->
+                <h4 style="font-size:1rem; font-weight:600; color:var(--text-main); margin-bottom:0.2rem;">${task.location}</h4>
+                ${task.coordinates ? `
+                <div style="font-size:0.8rem; margin-bottom:0.6rem;">
+                    <a href="https://www.google.com/maps/search/${encodeURIComponent(task.coordinates)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--primary); text-decoration:none;" title="Ver Coordenadas no Mapa">📍 GPS ${task.coordinates}</a>
+                </div>
+                ` : '<div style="margin-bottom:0.6rem;"></div>'}
+                
+                <!-- 4. Equipe & 5. Data e horário -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed var(--border-color); padding-top:0.8rem; margin-top: auto;">
+                    <span style="font-size:0.85rem; font-weight:600; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:4px; color:var(--text-main);">${team.name}</span>
+                    
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right;">
+                        <span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr}</span>
+                        ${task.timeStart ? `<span style="font-size:0.8rem; color:var(--primary); font-weight:600;">⏰ ${task.timeStart} ${task.timeEnd ? ' às '+task.timeEnd : ''}</span>` : ''}
                     </div>
                 </div>
 
-                <div style="display:flex; gap:0.5rem;">
-                    <button class="btn btn-secondary w-full" style="font-size:0.85rem; padding:0.4rem;" onclick="cycleStatus('${task.id}')">
-                        ↻ Status
-                    </button>
-                    <button class="btn btn-secondary w-full" style="font-size:0.85rem; padding:0.4rem;" onclick="openEditTaskModal('${task.id}')">
-                        ✏️ Editar
-                    </button>
-                    <button class="btn w-full" style="background:#fee2e2; color:#ef4444; border:none; padding:0.4rem; font-size:0.85rem;" onclick="deleteTask('${task.id}')">
-                        ✕ Excluir
-                    </button>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem;" onclick="event.stopPropagation()">
+                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="cycleStatus('${task.id}')">↻ Status</button>
+                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openEditTaskModal('${task.id}')">✏️ Editar</button>
+                    <button class="btn w-full" style="background:#fee2e2; color:#ef4444; border:none; padding:0.3rem; font-size:0.8rem;" onclick="deleteTask('${task.id}')">✕ Excluir</button>
                 </div>
             </div>
         `;
@@ -617,6 +613,76 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+function openWhatsappExportModal() {
+    document.getElementById('whatsappExportModal').classList.add('active');
+    document.getElementById('whatsappExportDate').value = new Date().toISOString().split('T')[0];
+}
+
+function closeWhatsappExportModal() {
+    document.getElementById('whatsappExportModal').classList.remove('active');
+}
+
+function executeWhatsAppExport() {
+    const selectedDate = document.getElementById('whatsappExportDate').value;
+    if (!selectedDate) {
+        alert('Por favor, selecione uma data.');
+        return;
+    }
+
+    let filteredTasks = tasks.filter(t => {
+        const end = t.dateEnd || t.date;
+        return selectedDate >= t.date && selectedDate <= end;
+    });
+
+    if (currentView !== 'geral') {
+        filteredTasks = filteredTasks.filter(t => t.teamId === currentView);
+    }
+    
+    if (currentFilter !== 'all') {
+        filteredTasks = filteredTasks.filter(t => t.status === currentFilter);
+    }
+    
+    if (filteredTasks.length === 0) {
+        alert("Não há demandas para copiar nesta data combinada aos filtros atuais.");
+        closeWhatsappExportModal();
+        return;
+    }
+
+    filteredTasks.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    // Exibir dia, mes e ano legível
+    const dateObjFormat = new Date(selectedDate + 'T12:00:00');
+    const displayDate = dateObjFormat.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year:'numeric' });
+
+    let textToCopy = `📋 *RESUMO DE DEMANDAS*\n*Data:* ${displayDate.charAt(0).toUpperCase() + displayDate.slice(1)}\n\n`;
+
+    filteredTasks.forEach((t, index) => {
+        const team = initialTeams.find(teamObj => teamObj.id === t.teamId);
+        const teamName = team ? team.name : 'Sem Equipe';
+        
+        let statusStr = "Pendente";
+        if (t.status === 'progress') statusStr = "Em Andamento";
+        if (t.status === 'done') statusStr = "Concluído";
+        
+        textToCopy += `*${index + 1}. ${t.taskType || 'Outros'}*\n`;
+        textToCopy += `📊 Status: ${statusStr}\n`;
+        textToCopy += `📍 Endereço: ${t.location}\n`;
+        if (t.coordinates) textToCopy += `🌍 GPS: https://www.google.com/maps/search/${encodeURIComponent(t.coordinates)}\n`;
+        textToCopy += `👷 Equipe: ${teamName}\n`;
+        if (t.timeStart) textToCopy += `⏰ Horário: ${t.timeStart}${t.timeEnd ? ' às ' + t.timeEnd : ''}\n`;
+        textToCopy += `📝 Descrição: ${t.description}\n`;
+        if (t.manager) textToCopy += `👤 Gestor: ${t.manager}\n`;
+        textToCopy += `\n`;
+    });
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert(`Sucesso! ${filteredTasks.length} demandas do dia ${selectedDate.split('-').reverse().join('/')} foram copiadas.`);
+        closeWhatsappExportModal();
+    }).catch(err => {
+        alert("Erro ao copiar: " + err);
+    });
 }
 
 function renderDashboardView(filteredTasks, container) {
