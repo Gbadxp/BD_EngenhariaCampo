@@ -24,5 +24,10 @@ const initialTeams = [
     { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
 
     // --- EMENDADORES (NOVA MAMORÉ/RO) ---
-    { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" }
+    { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
+
+    // --- MULTISKILL ---
+    { id: 20, name: "Railton Kley", group: "Multskill" },
+    { id: 21, name: "Jhonatan Renan", group: "Multskill" },
+    { id: 22, name: "Arthur Queiroz", group: "Multskill" }
 ];

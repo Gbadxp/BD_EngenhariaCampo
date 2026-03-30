@@ -78,6 +78,52 @@ function listenForChanges() {
         const data = snapshot.val();
         if (data) {
             initialTeams = Object.values(data);
+            
+            // Clean up duplicates if the user or sync process created them
+            let nameRegistry = new Set();
+            let toRemove = [];
+            let deduplicatedTeams = [];
+            
+            initialTeams.forEach(t => {
+                const normName = t.name ? t.name.trim().toLowerCase() : "";
+                if (normName && nameRegistry.has(normName)) {
+                    toRemove.push(t.id);
+                } else {
+                    if (normName) nameRegistry.add(normName);
+                    deduplicatedTeams.push(t);
+                }
+            });
+            
+            toRemove.forEach(id => {
+                db.ref('teams/' + id).remove();
+            });
+            
+            initialTeams = deduplicatedTeams;
+            
+            // Sync new Multskill team members if they haven't been added yet
+            const multskillSeed = [
+                { id: 20, name: "Railton Kley", group: "Multskill" },
+                { id: 21, name: "Jhonatan Renan", group: "Multskill" },
+                { id: 22, name: "Arthur Queiroz", group: "Multskill" }
+            ];
+            
+            let changed = false;
+            multskillSeed.forEach(t => {
+                const normName = t.name.trim().toLowerCase();
+                if (!initialTeams.find(existing => existing.id == t.id || (existing.name && existing.name.trim().toLowerCase() === normName))) {
+                    db.ref('teams/' + t.id).set(t);
+                    initialTeams.push(t);
+                    changed = true;
+                }
+            });
+            
+            if (changed || toRemove.length > 0) {
+                renderSidebarTeams();
+                if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
+                    if(typeof renderTeamManagerList === 'function') renderTeamManagerList();
+                }
+                renderView();
+            }
         } else {
             // Seed DB on the very first empty run with core 19 architecture
             const coreSeed = [
