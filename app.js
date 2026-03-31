@@ -811,6 +811,8 @@ function renderDashboardView(filteredTasks, container) {
     container.innerHTML = html;
 }
 
+
+
 // -------------------- //
 // API STATUS/ACTIONS   //
 // -------------------- //
@@ -941,6 +943,20 @@ function handleTaskSubmit(e) {
     const coordinates = document.getElementById('taskCoordinates').value;
     const contact = document.getElementById('taskContact').value;
     const description = document.getElementById('taskDescription').value;
+    
+    // Validation: Date end cannot be before Date start
+    if (dateEnd && dateEnd < date) {
+        alert("Erro: A data de término não pode ser menor que a data inicial.");
+        return;
+    }
+    
+    // Validation: If it ends on the same day, Time end cannot be before Time start
+    if (dateEnd === date || !dateEnd) {
+        if (timeStart && timeEnd && timeEnd < timeStart) {
+            alert("Erro: O horário de término não pode ser menor que o horário inicial.");
+            return;
+        }
+    }
     
     const editingId = document.getElementById('taskId').value;
     
@@ -1134,6 +1150,122 @@ function openDayModal(dateStr) {
 
 function closeDayModal() {
     document.getElementById('dayModal').classList.remove('active');
+}
+
+// -------------------- //
+// PER-DAY TEAMS MODAL  //
+// -------------------- //
+function openDayTeamsModal(dateStr) {
+    let dayTasks = tasks.filter(t => {
+        const end = t.dateEnd || t.date;
+        return dateStr >= t.date && dateStr <= end;
+    });
+    
+    if (currentView !== 'geral') {
+        dayTasks = dayTasks.filter(t => t.teamId === currentView);
+    }
+    dayTasks = dayTasks.filter(t => activeStatusFilters.includes(t.status));
+
+    const dateObj = new Date(dateStr + 'T12:00:00');
+    document.getElementById('dayTeamsModalTitle').innerText = "Ocupação: " + dateObj.toLocaleDateString('pt-BR');
+
+    let comDemandaGroups = {};
+    let countComDemanda = 0;
+    
+    let semDemandaGroups = {};
+    let countSemDemanda = 0;
+
+    initialTeams.forEach(team => {
+        if (currentView !== 'geral' && currentView !== team.id) return;
+        
+        const teamTasks = dayTasks.filter(t => t.teamId === team.id && t.status !== 'done');
+        const groupName = team.group || 'GERAL';
+        
+        if (teamTasks.length > 0) {
+            countComDemanda++;
+            let servicesMap = new Set();
+            teamTasks.forEach(t => servicesMap.add(t.taskType || 'Outros'));
+            const servicesStr = Array.from(servicesMap).map(s => `
+                <span style="display:inline-block; margin-top:0.4rem; margin-right:0.4rem; font-size:0.75rem; background:rgba(37,99,235,0.1); color:var(--primary); font-weight:600; padding:0.25rem 0.6rem; border-radius:12px;">
+                    🛠️ ${s}
+                </span>
+            `).join('');
+
+            if (!comDemandaGroups[groupName]) comDemandaGroups[groupName] = '';
+            comDemandaGroups[groupName] += `
+                <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+                    <h4 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin-bottom:0.2rem;">${team.name}</h4>
+                    <div>${servicesStr}</div>
+                </div>
+            `;
+        } else {
+            countSemDemanda++;
+            if (!semDemandaGroups[groupName]) semDemandaGroups[groupName] = '';
+            semDemandaGroups[groupName] += `
+                <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:0.8rem 1rem; border-radius:10px; display:flex; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+                    <div style="width:10px; height:10px; border-radius:50%; background:var(--status-done); margin-right:0.8rem; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);"></div>
+                    <h4 style="font-size:1rem; font-weight:600; color:var(--text-main); margin:0;">${team.name}</h4>
+                </div>
+            `;
+        }
+    });
+    
+    let comDemandaHtml = '';
+    for (const group in comDemandaGroups) {
+        comDemandaHtml += `
+            <div style="margin-bottom:1.5rem;">
+                <h5 style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.6rem; padding-left:0.5rem; border-left:3px solid var(--status-progress);">${group}</h5>
+                <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                    ${comDemandaGroups[group]}
+                </div>
+            </div>
+        `;
+    }
+
+    let semDemandaHtml = '';
+    for (const group in semDemandaGroups) {
+        semDemandaHtml += `
+            <div style="margin-bottom:1.5rem;">
+                <h5 style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.6rem; padding-left:0.5rem; border-left:3px solid var(--status-done);">${group}</h5>
+                <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                    ${semDemandaGroups[group]}
+                </div>
+            </div>
+        `;
+    }
+
+    if (comDemandaHtml === '') comDemandaHtml = '<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding:1.5rem;">Nenhuma equipe com demanda pendente neste dia.</p>';
+    if (semDemandaHtml === '') semDemandaHtml = '<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding:1.5rem;">Todas as equipes estão com obras programadas.</p>';
+
+    let html = `
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+            <div style="background:var(--bg-main); border-radius:12px; border:1px solid var(--border-color); padding:1.2rem;">
+                <h3 style="margin-bottom: 1.2rem; color:var(--text-main); border-bottom:2px solid var(--status-progress); padding-bottom:0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                    <span><span style="font-size:1.1rem; margin-right:0.4rem;">👷</span> Com Demanda</span>
+                    <span style="background:var(--status-progress); color:white; font-size:0.8rem; font-weight:700; padding:0.15rem 0.6rem; border-radius:20px;">${countComDemanda}</span>
+                </h3>
+                <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                    ${comDemandaHtml}
+                </div>
+            </div>
+            <div style="background:var(--bg-main); border-radius:12px; border:1px solid var(--border-color); padding:1.2rem;">
+                <h3 style="margin-bottom: 1.2rem; color:var(--text-main); border-bottom:2px solid var(--status-done); padding-bottom:0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                    <span><span style="font-size:1.1rem; margin-right:0.4rem;">✅</span> Equipas Livres</span>
+                    <span style="background:var(--status-done); color:white; font-size:0.8rem; font-weight:700; padding:0.15rem 0.6rem; border-radius:20px;">${countSemDemanda}</span>
+                </h3>
+                <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                    ${semDemandaHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('dayTeamsModalBody').innerHTML = html;
+    document.getElementById('dayTeamsModal').classList.add('active');
+}
+
+function closeDayTeamsModal() {
+    document.getElementById('dayTeamsModal').classList.remove('active');
 }
 
 // -------------------- //

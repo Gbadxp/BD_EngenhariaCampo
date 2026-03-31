@@ -232,12 +232,30 @@
                 <button class="close-btn" onclick="closeDayModal()">✕</button>
             </div>
             <div class="modal-body">
-                <button class="btn btn-primary w-full" style="margin-bottom: 1rem;" onclick="openNewTaskModal(document.getElementById('dayModal').getAttribute('data-current-date'))">
-                    + Adicionar Demanda Neste Dia
-                </button>
+                <div style="display:flex; gap:0.5rem; margin-bottom: 1rem;">
+                    <button class="btn btn-primary" style="flex:2; font-size:0.9rem;" onclick="openNewTaskModal(document.getElementById('dayModal').getAttribute('data-current-date'))">
+                        + Nova Demanda
+                    </button>
+                    <button class="btn btn-secondary" style="flex:1.5; font-size:0.8rem; padding:0.4rem;" onclick="openDayTeamsModal(document.getElementById('dayModal').getAttribute('data-current-date'))">
+                        👷 Equipes
+                    </button>
+                </div>
                 <div id="dayModalBody" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- Cards injetados via JS -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Modal: Equipes do Dia (Calendário) -->
+    <div class="modal-overlay" id="dayTeamsModal" style="z-index: 1060;">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+            <div class="modal-header">
+                <h3 id="dayTeamsModalTitle">Ocupação das Equipes</h3>
+                <button class="close-btn" onclick="closeDayTeamsModal()">✕</button>
+            </div>
+            <div class="modal-body" id="dayTeamsModalBody" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Conteúdo injetado via JS -->
             </div>
         </div>
     </div>
