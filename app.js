@@ -21,6 +21,11 @@ let currentView = 'geral';
 let currentDisplayMode = 'list';
 let activeStatusFilters = ['pending', 'progress', 'done'];
 
+let currentCalYear = new Date().getFullYear();
+let currentCalMonth = new Date().getMonth();
+
+let currentOnCall = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
 });
@@ -194,6 +199,12 @@ function listenForChanges() {
         }
         // Force the app to naturally react to remote changes
         renderView();
+    });
+
+    // 3. Listen for On-Call
+    db.ref('onCall').on('value', (snapshot) => {
+        currentOnCall = snapshot.val();
+        renderOnCallBanner();
     });
 }
 
@@ -432,14 +443,12 @@ function renderListView(filteredTasks, container) {
 }
 
 function renderCalendarView(filteredTasks, container) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     
+    const year = currentCalYear;
+    const month = currentCalMonth;
     const firstDay = new Date(year, month, 1).getDay(); 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     
     let html = `
         <div style="margin-bottom: 1.5rem; display: flex; justify-content:space-between; align-items:center;">
@@ -447,6 +456,10 @@ function renderCalendarView(filteredTasks, container) {
                 <span style="display:block; width:6px; height:1.4rem; background:var(--primary); border-radius:4px;"></span>
                 ${monthNames[month]} de ${year}
             </h2>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="changeCalendarMonth(-1)">⬅️ Anterior</button>
+                <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="changeCalendarMonth(1)">Próximo ➡️</button>
+            </div>
         </div>
         <div class="calendar-grid">
             <div class="calendar-header-day">Dom</div>
@@ -506,6 +519,18 @@ function renderCalendarView(filteredTasks, container) {
     
     html += `</div>`;
     container.innerHTML = html;
+}
+
+function changeCalendarMonth(offset) {
+    currentCalMonth += offset;
+    if (currentCalMonth < 0) {
+        currentCalMonth = 11;
+        currentCalYear--;
+    } else if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+    }
+    renderView();
 }
 
 let mapInstance = null;

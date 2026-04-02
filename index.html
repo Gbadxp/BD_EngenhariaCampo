@@ -49,6 +49,9 @@
                     <button class="nav-item" onclick="openManagerManager()" style="justify-content:center; border:1px solid var(--primary); background:var(--bg-main); color:var(--primary); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;">
                         👔 Gerenciar Analistas
                     </button>
+                    <button class="nav-item" onclick="openOnCallManager()" style="justify-content:center; border:1px solid #ef4444; background:#fee2e2; color:#ef4444; font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;" title="Definir Plantão da Semana">
+                        🚨 Gerenciar Sobreaviso
+                    </button>
                     <button class="nav-item" onclick="exportToCSV()" style="justify-content:center; border:1px solid var(--border-color); background:var(--bg-main); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;" title="Baixar relatório completo em Excel">
                         📥 Exportar Excel
                     </button>
@@ -81,6 +84,9 @@
                 <div class="topbar-left">
                     <h1 id="viewTitle">Visão Geral</h1>
                     <p class="subtitle" id="viewSubtitle">Cronograma de todas as equipes</p>
+                    <div id="onCallBanner" style="display: none; margin-top: 0.5rem; background: #fee2e2; color: #ef4444; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; align-items: center; gap: 0.4rem;">
+                        🚨 Sobreaviso da Semana: <span id="onCallText"></span>
+                    </div>
                 </div>
                 <div class="topbar-right">
                     <div class="status-filters">
@@ -335,6 +341,33 @@
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeManagerForm()">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Salvar Analista</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- On-Call Manager Modal -->
+    <div class="modal-overlay" id="onCallManagerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Gerenciar Sobreaviso (Plantão)</h3>
+                <button class="close-btn" onclick="closeOnCallManager()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="onCallForm" onsubmit="handleOnCallSubmit(event)">
+                    <div class="form-group">
+                        <label>Selecione a Equipe em Sobreaviso</label>
+                        <select id="onCallTeamSelect" required>
+                            <option value="" disabled selected>Carregando equipes...</option>
+                        </select>
+                    </div>
+                    <div class="form-actions" style="justify-content: space-between;">
+                        <button type="button" class="btn" style="background:#fee2e2; color:#ef4444; border:none;" onclick="clearOnCall()">Remover Plantão</button>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="closeOnCallManager()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
                     </div>
                 </form>
             </div>
