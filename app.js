@@ -21,10 +21,25 @@ let currentView = 'geral';
 let currentDisplayMode = 'list';
 let activeStatusFilters = ['pending', 'progress', 'done'];
 
-let currentCalYear = new Date().getFullYear();
-let currentCalMonth = new Date().getMonth();
+let globalDateStart = (() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+})();
+let globalDateEnd = (() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+})();
+
+function updateDateFilter() {
+    const startObj = document.getElementById('globalDateStart');
+    const endObj = document.getElementById('globalDateEnd');
+    if (startObj && startObj.value) globalDateStart = startObj.value;
+    if (endObj && endObj.value) globalDateEnd = endObj.value;
+    renderView();
+}
 
 let currentOnCall = null;
+let onCallSchedules = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
@@ -35,6 +50,11 @@ function initApp() {
     renderSidebarTeams();
     updateDateDisplay();
     listenForChanges(); // Boots up the Database observer instead of loadData
+
+    const startInput = document.getElementById('globalDateStart');
+    const endInput = document.getElementById('globalDateEnd');
+    if(startInput) startInput.value = globalDateStart;
+    if(endInput) endInput.value = globalDateEnd;
     
     const today = new Date().toISOString().split('T')[0];
     const taskDate = document.getElementById('taskDate');
@@ -201,10 +221,17 @@ function listenForChanges() {
         renderView();
     });
 
-    // 3. Listen for On-Call
-    db.ref('onCall').on('value', (snapshot) => {
-        currentOnCall = snapshot.val();
-        renderOnCallBanner();
+    // 3. Listen for On-Calls
+    db.ref('onCalls').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            onCallSchedules = Object.values(data);
+        } else {
+            onCallSchedules = [];
+        }
+        if(document.getElementById('onCallManagerModal') && document.getElementById('onCallManagerModal').classList.contains('active')){
+            if(typeof renderOnCallList === 'function') renderOnCallList();
+        }
     });
 }
 
@@ -305,6 +332,23 @@ function switchView(viewId, element) {
     if (viewId === 'geral') {
         title.innerText = "Visão Geral";
         sub.innerText = "Cronograma de todas as equipes";
+        
+        currentDisplayMode = 'list';
+        activeStatusFilters = ['pending', 'progress', 'done'];
+        
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        globalDateStart = start;
+        globalDateEnd = end;
+        if (document.getElementById('globalDateStart')) document.getElementById('globalDateStart').value = start;
+        if (document.getElementById('globalDateEnd')) document.getElementById('globalDateEnd').value = end;
+        
+        document.querySelectorAll('.view-toggles .toggle-btn').forEach(btn => btn.classList.remove('active'));
+        const btnList = document.getElementById('btnListView');
+        if (btnList) btnList.classList.add('active');
+        
+        document.querySelectorAll('.status-filters .toggle-btn').forEach(btn => btn.classList.add('active'));
     } else {
         const team = initialTeams.find(t => t.id === viewId);
         title.innerText = team.name;
@@ -355,6 +399,13 @@ function renderView() {
     }
     
     filteredTasks = filteredTasks.filter(t => activeStatusFilters.includes(t.status));
+    
+    if (globalDateStart && globalDateEnd) {
+        filteredTasks = filteredTasks.filter(t => {
+            const end = t.dateEnd || t.date;
+            return t.date <= globalDateEnd && end >= globalDateStart;
+        });
+    }
     
     filteredTasks.sort((a,b) => new Date(a.date) - new Date(b.date));
     
@@ -443,23 +494,29 @@ function renderListView(filteredTasks, container) {
 }
 
 function renderCalendarView(filteredTasks, container) {
-    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    let startDate = new Date();
+    let endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
     
-    const year = currentCalYear;
-    const month = currentCalMonth;
-    const firstDay = new Date(year, month, 1).getDay(); 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    if (globalDateStart) startDate = new Date(globalDateStart + 'T12:00:00');
+    if (globalDateEnd) endDate = new Date(globalDateEnd + 'T12:00:00');
+    
+    if (startDate > endDate) {
+        let temp = startDate;
+        startDate = endDate;
+        endDate = temp;
+    }
+    
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const totalDays = Math.floor(timeDiff / (1000 * 3600 * 24)) + 1;
+    let firstDayOfWeek = startDate.getDay();
+    let subtitle = `De ${startDate.toLocaleDateString('pt-BR')} até ${endDate.toLocaleDateString('pt-BR')}`;
     
     let html = `
         <div style="margin-bottom: 1.5rem; display: flex; justify-content:space-between; align-items:center;">
             <h2 style="font-size: 1.4rem; display:flex; align-items:center; gap:0.6rem;">
                 <span style="display:block; width:6px; height:1.4rem; background:var(--primary); border-radius:4px;"></span>
-                ${monthNames[month]} de ${year}
+                Período: ${subtitle}
             </h2>
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="changeCalendarMonth(-1)">⬅️ Anterior</button>
-                <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="changeCalendarMonth(1)">Próximo ➡️</button>
-            </div>
         </div>
         <div class="calendar-grid">
             <div class="calendar-header-day">Dom</div>
@@ -471,33 +528,32 @@ function renderCalendarView(filteredTasks, container) {
             <div class="calendar-header-day">Sáb</div>
     `;
     
-    // empty blocks
-    for(let i = 0; i < firstDay; i++) {
+    for(let i = 0; i < firstDayOfWeek; i++) {
         html += `<div class="calendar-cell empty"></div>`;
     }
     
     const todayStr = new Date().toISOString().split('T')[0];
     
-    for(let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    for(let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startDate.getTime() + i * 24*3600*1000);
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const d = String(currentDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${d}`;
         const isToday = (dateStr === todayStr) ? 'today' : '';
         
-        // Match tasks that span strictly over the day
         let cellTasks = filteredTasks.filter(t => {
             const end = t.dateEnd || t.date;
             return dateStr >= t.date && dateStr <= end;
         });
-        let chipsHtml = '';
         
+        let chipsHtml = '';
         cellTasks.forEach(task => {
             const team = initialTeams.find(t => t.id === task.teamId);
             let statusChar = "🟡";
             if (task.status === 'progress') statusChar = "🔵";
             if (task.status === 'done') statusChar = "🟢";
-            
             let sColor = getServiceColor(task.taskType);
-            
-            // Opens Detail Modal; event.stopPropagation prevents the DayModal cell click from triggering
             chipsHtml += `<div class="cal-task-chip" style="border-left-color: ${sColor};" title="${task.taskType || 'Serviço'}" onclick="event.stopPropagation(); openTaskDetails('${task.id}')"><span style="font-size:9px; margin-right:4px;">${statusChar}</span>E${team.id}: ${task.location}</div>`;
         });
         
@@ -509,7 +565,7 @@ function renderCalendarView(filteredTasks, container) {
         `;
     }
     
-    const totalCells = firstDay + daysInMonth;
+    const totalCells = firstDayOfWeek + totalDays;
     const remainder = totalCells % 7;
     if(remainder !== 0) {
         for(let j = 0; j < (7 - remainder); j++) {
@@ -521,17 +577,8 @@ function renderCalendarView(filteredTasks, container) {
     container.innerHTML = html;
 }
 
-function changeCalendarMonth(offset) {
-    currentCalMonth += offset;
-    if (currentCalMonth < 0) {
-        currentCalMonth = 11;
-        currentCalYear--;
-    } else if (currentCalMonth > 11) {
-        currentCalMonth = 0;
-        currentCalYear++;
-    }
-    renderView();
-}
+// changeCalendarMonth removed in favor of globalDateStart
+
 
 let mapInstance = null;
 
@@ -805,6 +852,27 @@ function renderDashboardView(filteredTasks, container) {
         teamStatsHtml = `<p style="color:var(--text-muted); text-align:center; margin-top:1rem;">Nenhum dado produtivo para exibir agora.</p>`;
     }
     
+    // Status Pie Data
+    const statusData = [pending, progress, done];
+    
+    // Type Pie Data (Top 5 Types)
+    const typeCount = {};
+    filteredTasks.forEach(t => {
+        const type = t.taskType || 'Outros';
+        typeCount[type] = (typeCount[type] || 0) + 1;
+    });
+    let sortedTypes = Object.entries(typeCount).sort((a,b) => b[1] - a[1]);
+    
+    if (sortedTypes.length > 5) {
+        const othersCount = sortedTypes.slice(5).reduce((acc, curr) => acc + curr[1], 0);
+        sortedTypes = sortedTypes.slice(0, 5);
+        sortedTypes.push(['Outros', othersCount]);
+    }
+    
+    const typeLabels = sortedTypes.map(x => x[0]);
+    const typeData = sortedTypes.map(x => x[1]);
+    const typeColors = typeLabels.map(t => getServiceColor(t));
+    
     const html = `
         <div style="animation: fadeIn 0.3s ease;">
             <div class="dashboard-grid">
@@ -826,6 +894,21 @@ function renderDashboardView(filteredTasks, container) {
                 </div>
             </div>
             
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="perf-section" style="display:flex; flex-direction:column; align-items:center;">
+                    <h3 style="margin-bottom: 1rem; width:100%; color: var(--text-main); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">Demandas por Status</h3>
+                    <div style="position: relative; height:250px; width:100%;">
+                        <canvas id="chartStatus"></canvas>
+                    </div>
+                </div>
+                <div class="perf-section" style="display:flex; flex-direction:column; align-items:center;">
+                    <h3 style="margin-bottom: 1rem; width:100%; color: var(--text-main); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">Demandas por Tipo</h3>
+                    <div style="position: relative; height:250px; width:100%;">
+                        <canvas id="chartTypes"></canvas>
+                    </div>
+                </div>
+            </div>
+            
             <div class="perf-section">
                 <h3 style="margin-bottom: 2rem; color: var(--text-main); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">Desempenho por Equipes</h3>
                 ${teamStatsHtml}
@@ -834,6 +917,51 @@ function renderDashboardView(filteredTasks, container) {
     `;
     
     container.innerHTML = html;
+    
+    setTimeout(() => {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        if (typeof Chart !== 'undefined') Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
+        
+        const ctxStatus = document.getElementById('chartStatus');
+        if (ctxStatus && typeof Chart !== 'undefined') {
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendentes', 'Em Andamento', 'Concluídas'],
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+        
+        const ctxTypes = document.getElementById('chartTypes');
+        if (ctxTypes && typeof Chart !== 'undefined') {
+            new Chart(ctxTypes, {
+                type: 'pie',
+                data: {
+                    labels: typeLabels,
+                    datasets: [{
+                        data: typeData,
+                        backgroundColor: typeColors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }, 50);
 }
 
 
@@ -1262,7 +1390,34 @@ function openDayTeamsModal(dateStr) {
     if (comDemandaHtml === '') comDemandaHtml = '<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding:1.5rem;">Nenhuma equipe com demanda pendente neste dia.</p>';
     if (semDemandaHtml === '') semDemandaHtml = '<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding:1.5rem;">Todas as equipes estão com obras programadas.</p>';
 
+    let sobreavisoHtml = '';
+    
+    let teamsOnCallToday = [];
+    onCallSchedules.forEach(schedule => {
+        if (dateStr >= schedule.startDate && dateStr <= schedule.endDate) {
+            let selectedIds = Array.isArray(schedule.teamIds) ? schedule.teamIds : [schedule.teamId];
+            teamsOnCallToday = teamsOnCallToday.concat(selectedIds);
+        }
+    });
+    
+    if (teamsOnCallToday.length > 0) {
+        teamsOnCallToday = [...new Set(teamsOnCallToday)];
+        const teamNames = teamsOnCallToday.map(id => {
+            const teamObj = initialTeams.find(t => t.id && t.id.toString() === id.toString());
+            return teamObj ? teamObj.name : "Desconhecida";
+        });
+        sobreavisoHtml = `
+            <div style="background:#fee2e2; border:1px solid #ef4444; border-radius:12px; padding:1.2rem; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 0.5rem; color:#ef4444; border-bottom:2px solid #ef4444; padding-bottom:0.6rem; display:flex; align-items:center;">
+                    <span style="font-size:1.1rem; margin-right:0.4rem;">🚨</span> Equipes em Sobreaviso
+                </h3>
+                <p style="color:#b91c1c; font-weight: 600; font-size: 1rem; line-height: 1.5;">${teamNames.join(" | ")}</p>
+            </div>
+        `;
+    }
+
     let html = `
+        ${sobreavisoHtml}
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
             <div style="background:var(--bg-main); border-radius:12px; border:1px solid var(--border-color); padding:1.2rem;">
                 <h3 style="margin-bottom: 1.2rem; color:var(--text-main); border-bottom:2px solid var(--status-progress); padding-bottom:0.6rem; display:flex; justify-content:space-between; align-items:center;">
@@ -1462,5 +1617,155 @@ function handleManagerSubmit(e) {
 function deleteManager(id) {
     if(confirm("Excluir este gestor permanentemente? (Isso não alterará o nome nas demandas antigas já finalizadas)")) {
         db.ref('managers/' + id).remove();
+    }
+}
+
+// -------------------- //
+// ON-CALL/SOBREAVISO   //
+// -------------------- //
+
+function renderOnCallBanner() {
+    // Banner foi movido para o modal da agenda.
+}
+
+function openOnCallManager() {
+    document.getElementById('onCallManagerModal').classList.add('active');
+    renderOnCallList();
+}
+
+function closeOnCallManager() {
+    document.getElementById('onCallManagerModal').classList.remove('active');
+}
+
+function renderOnCallList() {
+    const list = document.getElementById('onCallListContainer');
+    list.innerHTML = '';
+    
+    // sort chronologically
+    const sorted = [...onCallSchedules].sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
+    
+    if (sorted.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Nenhuma escala de sobreaviso agendada.</p>';
+        return;
+    }
+    
+    sorted.forEach(schedule => {
+        let selectedIds = Array.isArray(schedule.teamIds) ? schedule.teamIds : [];
+        const teamNames = selectedIds.map(id => {
+            const teamObj = initialTeams.find(t => t.id.toString() === id.toString());
+            return teamObj ? teamObj.name : "Desconhecida";
+        });
+        
+        let startFmt = new Date(schedule.startDate + 'T12:00:00').toLocaleDateString('pt-BR').substring(0,5);
+        let endFmt = new Date(schedule.endDate + 'T12:00:00').toLocaleDateString('pt-BR').substring(0,5);
+        
+        list.innerHTML += `
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex: 1;">
+                    <h4 style="font-size:0.95rem; color:var(--text-main); margin-bottom:0.3rem;">${teamNames.join(', ')}</h4>
+                    <span style="font-size:0.8rem; color:var(--primary); font-weight:700;">📅 ${startFmt} a ${endFmt}</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-left: 1rem;">
+                    <button class="btn btn-secondary" style="padding:0.4rem; border:none; background:rgba(37,99,235,0.1); color:var(--primary);" onclick="openOnCallForm('${schedule.id}')">✏️</button>
+                    <button class="btn" style="padding:0.4rem; border:none; background:#fee2e2; color:#ef4444;" onclick="deleteOnCall('${schedule.id}')">✕</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function openOnCallForm(scheduleId = null) {
+    document.getElementById('onCallFormModal').classList.add('active');
+    document.getElementById('onCallForm').reset();
+    document.getElementById('editOnCallId').value = '';
+    document.getElementById('onCallFormTitle').innerText = 'Nova Escala de Sobreaviso';
+    
+    let selectedIds = [];
+    let startD = new Date().toISOString().split('T')[0];
+    let endD = new Date().toISOString().split('T')[0];
+    
+    if (scheduleId) {
+        const schedule = onCallSchedules.find(s => s.id === scheduleId);
+        if (schedule) {
+            document.getElementById('editOnCallId').value = schedule.id;
+            selectedIds = Array.isArray(schedule.teamIds) ? schedule.teamIds : [];
+            startD = schedule.startDate || startD;
+            endD = schedule.endDate || endD;
+            document.getElementById('onCallFormTitle').innerText = 'Editar Escala de Sobreaviso';
+        }
+    }
+    
+    const startObj = document.getElementById('onCallDateStart');
+    const endObj = document.getElementById('onCallDateEnd');
+    if (startObj) startObj.value = startD;
+    if (endObj) endObj.value = endD;
+    
+    const container = document.getElementById('onCallTeamButtons');
+    container.innerHTML = '';
+    
+    initialTeams.forEach(t => {
+        const isSelected = selectedIds.includes(t.id.toString()) || selectedIds.includes(t.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = isSelected ? 'btn btn-primary' : 'btn btn-secondary';
+        btn.style.margin = '4px';
+        btn.style.padding = '0.4rem 0.8rem';
+        btn.style.fontSize = '0.85rem';
+        btn.innerText = t.name;
+        btn.onclick = () => {
+             btn.classList.toggle('btn-primary');
+             btn.classList.toggle('btn-secondary');
+             if (btn.classList.contains('btn-primary')) {
+                 btn.setAttribute('data-selected', 'true');
+             } else {
+                 btn.removeAttribute('data-selected');
+             }
+        };
+        if (isSelected) btn.setAttribute('data-selected', 'true');
+        btn.setAttribute('data-team-id', t.id);
+        container.appendChild(btn);
+    });
+}
+
+function closeOnCallForm() {
+    document.getElementById('onCallFormModal').classList.remove('active');
+}
+
+function handleOnCallSubmit(e) {
+    e.preventDefault();
+    const idField = document.getElementById('editOnCallId').value;
+    const container = document.getElementById('onCallTeamButtons');
+    const selectedBtns = container.querySelectorAll('button[data-selected="true"]');
+    const selectedOptions = Array.from(selectedBtns).map(btn => btn.getAttribute('data-team-id'));
+    
+    if (selectedOptions.length === 0) {
+        alert("Selecione pelo menos uma equipe.");
+        return;
+    }
+    
+    const startDate = document.getElementById('onCallDateStart').value;
+    const endDate = document.getElementById('onCallDateEnd').value;
+    
+    if (startDate && endDate && startDate > endDate) {
+        alert("A data inicial não pode ser maior que a final.");
+        return;
+    }
+    
+    if (idField) {
+        db.ref('onCalls/' + idField).update({ teamIds: selectedOptions, startDate, endDate })
+          .then(() => closeOnCallForm())
+          .catch(err => alert("Erro ao editar escala: " + err.message));
+    } else {
+        const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
+        db.ref('onCalls/' + newId).set({ id: newId, teamIds: selectedOptions, startDate, endDate })
+          .then(() => closeOnCallForm())
+          .catch(err => alert("Erro ao salvar escala: " + err.message));
+    }
+}
+
+function deleteOnCall(id) {
+    if(confirm("Excluir esta escala de sobreaviso?")) {
+        db.ref('onCalls/' + id).remove()
+            .catch(err => alert("Erro ao deletar escala: " + err.message));
     }
 }

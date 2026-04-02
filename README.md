@@ -12,19 +12,21 @@ O Painel de Controle oferece módulos poderosos de integração e visualização
 
 - **Modões de Exibição (Multivisões):**
   - 📄 **Modo Lista:** Uma exibição em cartões (cards) resumidos que trazem os principais indicadores de forma direta: status, endereço, equipe responsável e tipo do serviço (com clique para detalhes).
-  - 📅 **Modo Calendário:** Uma visualização de grade mensal dinâmica onde cada balão ("chip") detalha o que está programado para o dia. Clicar nos dias expande a pauta diária.
+  - 📅 **Modo Calendário:** Uma visualização de grade dinâmica e flexível baseada no filtro de datas selecionado no topo, com detalhamento de obras agendadas.
   - 🌍 **Modo Mapa:** Usa integração robusta com **Leaflet.js** garantindo a localização via GPS de todas as demandas e plotando marcadores que podem ser clicados por cima da malha de mapas global.
-  - 📊 **Dashboard:** Metrifica e compila gráficos visuais (produtividade por equipe, e separação de tarefas pendentes, em andamento e concluídas).
+  - 📊 **Dashboard:** Metrifica produtividade por equipe e oferece **gráficos de pizza interativos (Chart.js)** separando as demandas globais filtradas por Status e por Tipo de Serviço.
 
 - **Gestão Organizacional Dinâmica:**
   - Painéis sobrepostos (modais) dedicados à inclusão, exclusão e alteração tanto de **Equipes de Campo** quanto de **Analistas**, espelhando de imediato na listagem lateral as novas adições via Realtime DB.
+  - 🚨 **Gestão de Sobreaviso (Planner):** Sistema avançado (CRUD) para controle de plantão, suportando a alocação de várias equipes em simultâneo com definidores de data de início e término. Tais parâmetros dialogam com o painel interno diário do Calendário, avisando quem está na escala daquele dia específico.
 
 - **Exportação e Comunicação Rápida:**
   - 📥 **Exportar em Excel (.CSV):** Geração e download dinâmico de relatórios tubulares mantendo a legibilidade UTF-8 nativa.
   - 💬 **Exportação WhatsApp:** Ferramenta dedicada a selecionar a data e os filtros em tela para copiar um relatório pronto para envio, poupando minutos de formatação manual.
 
 - **Filtros Customizados Inteligentes:**
-  - Sistema de botões dinâmicos e acumulativos que permite mesclar, por exemplo, "Pendentes" e "Em Andamento" de todas as equipes de uma só vez ou de apenas uma única equipe selecionada através do *Sidebar* intuitivo.
+  - 📆 **Filtro Global de Período:** Seletor prático fixado na barra lateral ("Ferramentas > Período"). Filtra todas as execuções matemáticas dos Dashboards e dita dinamicamente a grade responsiva do Calendário – garantindo a exibição estrita dos dias agendados. O sistema aciona um restabelecimento rápido pro mês atual sempre que a aba central "Visão Geral" for engatilhada.
+  - Sistema de botões dinâmicos e acumulativos que permite mesclar status, por exemplo, "Pendentes" e "Em Andamento".
 
 - **Design Premium e Mobile-first:**
   - A interface conta com Tema Claro (Light) e Tema Escuro (Dark) nativos *(CSS Variables)*, bem como um layout impecável e responsivo *(Media Queries)* que se reajusta para desktops, tablets e smartphones.
@@ -41,8 +43,9 @@ O ecossistema dispensa compilação pesada e é servido puramente pelos recursos
    - **Ícones/SVGs:** Integrados nativamente.
 2. **Back-End (Banco de Dados e Sincronização):**
    - **Google Firebase (Realtime Database):** Toda inserção de tarefas, exclusão ou edição é propagada dinamicamente entre múltiplos usuários simultaneamente. Usa a versão Compat do SDK (v10.8.0).
-3. **Módulos Terceirizados:**
+3. **Módulos Terceirizados / CDNs:**
    - **Leaflet.js:** Biblioteca open-source para a geração de mapas interativos *(Maps via CartoCDN base)*.
+   - **Chart.js:** Biblioteca injetada como CDN para geração dos gráficos de pizza no Dashboard.
 
 ---
 

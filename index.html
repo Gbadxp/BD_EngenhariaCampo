@@ -13,6 +13,8 @@
     <!-- Firebase JS SDK (Compat version for pure Vanilla JS without bundlers) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -43,6 +45,14 @@
                     <svg id="toolsToggleIcon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted); transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <nav class="sidebar-nav" id="toolsNavList" style="margin-top: 0.5rem; display: flex; flex-direction: column; overflow: hidden; transition: max-height 0.3s ease; max-height: 1000px;">
+                    <div style="background: var(--bg-card); padding: 10px; border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--border-color);">
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem; text-transform: uppercase;">Período</label>
+                        <div class="date-period-selector" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <input type="date" id="globalDateStart" onchange="updateDateFilter()" style="font-size: 0.85rem; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; text-align: center;">até</span>
+                            <input type="date" id="globalDateEnd" onchange="updateDateFilter()" style="font-size: 0.85rem; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                        </div>
+                    </div>
                     <button class="nav-item" onclick="openTeamManager()" style="justify-content:center; border:1px solid var(--primary); background:var(--bg-main); color:var(--primary); font-weight:600; border-radius:8px; padding:10px; margin-bottom:5px;">
                         ⚙️ Gerenciar Equipes
                     </button>
@@ -84,9 +94,6 @@
                 <div class="topbar-left">
                     <h1 id="viewTitle">Visão Geral</h1>
                     <p class="subtitle" id="viewSubtitle">Cronograma de todas as equipes</p>
-                    <div id="onCallBanner" style="display: none; margin-top: 0.5rem; background: #fee2e2; color: #ef4444; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; align-items: center; gap: 0.4rem;">
-                        🚨 Sobreaviso da Semana: <span id="onCallText"></span>
-                    </div>
                 </div>
                 <div class="topbar-right">
                     <div class="status-filters">
@@ -351,23 +358,47 @@
     <div class="modal-overlay" id="onCallManagerModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Gerenciar Sobreaviso (Plantão)</h3>
+                <h3>Gerenciar Sobreaviso (Escala)</h3>
                 <button class="close-btn" onclick="closeOnCallManager()">✕</button>
             </div>
             <div class="modal-body">
+                <button class="btn btn-primary w-full" style="margin-bottom: 1.5rem;" onclick="openOnCallForm()">+ Adicionar Nova Escala</button>
+                <div id="onCallListContainer" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- JS injected -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- On-Call Form Modal -->
+    <div class="modal-overlay" id="onCallFormModal" style="z-index: 1010;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="onCallFormTitle">Nova Escala de Sobreaviso</h3>
+                <button class="close-btn" onclick="closeOnCallForm()">✕</button>
+            </div>
+            <div class="modal-body">
                 <form id="onCallForm" onsubmit="handleOnCallSubmit(event)">
+                    <input type="hidden" id="editOnCallId">
                     <div class="form-group">
-                        <label>Selecione a Equipe em Sobreaviso</label>
-                        <select id="onCallTeamSelect" required>
-                            <option value="" disabled selected>Carregando equipes...</option>
-                        </select>
-                    </div>
-                    <div class="form-actions" style="justify-content: space-between;">
-                        <button type="button" class="btn" style="background:#fee2e2; color:#ef4444; border:none;" onclick="clearOnCall()">Remover Plantão</button>
-                        <div style="display:flex; gap:0.5rem;">
-                            <button type="button" class="btn btn-secondary" onclick="closeOnCallManager()">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        <label>Selecione as Equipes em Sobreaviso</label>
+                        <div id="onCallTeamButtons" style="display:flex; flex-wrap:wrap; background: var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding: 0.8rem; max-height: 200px; overflow-y:auto; margin-bottom: 1rem;">
+                            <!-- Injected dynamically -->
                         </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col">
+                            <label>Início do Sobreaviso</label>
+                            <input type="date" id="onCallDateStart" required>
+                        </div>
+                        <div class="col">
+                            <label>Fim do Sobreaviso</label>
+                            <input type="date" id="onCallDateEnd" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeOnCallForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Escala</button>
                     </div>
                 </form>
             </div>
