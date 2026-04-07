@@ -520,9 +520,8 @@ body {
     background: var(--bg-main);
     color: var(--text-main);
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
     border-left: 4px solid var(--status-pending);
     cursor: pointer;
     transition: filter 0.2s;
