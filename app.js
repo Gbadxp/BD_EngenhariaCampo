@@ -330,7 +330,7 @@ function switchView(viewId, element) {
     const sub = document.getElementById('viewSubtitle');
     
     if (viewId === 'geral') {
-        title.innerText = "Visão Geral";
+        title.innerHTML = 'Fiber<span class="highlight">Planner</span>';
         sub.innerText = "Cronograma de todas as equipes";
         
         currentDisplayMode = 'list';

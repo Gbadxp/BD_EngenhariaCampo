@@ -88,6 +88,14 @@ else if (currentDisplayMode === 'calendar') { renderCalendarView(filteredTasks, 
 
 ---
 
+## 🆕 Atualizações Recentes (UI & UX)
+
+- **Identidade Dinâmica (Logo):** A barra lateral agora suporta e centraliza o logotipo do sistema, trocando automaticamente entre a logo variante para tema claro (`logo-light.png`) e escuro (`logo-dark.png`), sem comprometer o layout vertical ou obrigar o surgimento da barra de rolagem.
+- **Melhoria no Título Principal:** O cabeçalho do painel principal (Topbar) mudou de "Visão Geral" para incorporar e destacar dinamicamente **FiberPlanner**, consolidando a marca ao utilizar o sistema.
+- **Expansão de Texto no Calendário:** O modo calendário foi otimizado nativamente via CSS flex para quebrar (word break) a descritiva de cada demanda nas células de dia, impedindo que os textos se cortassem na metade e dispensando a restrição de tamanho único de células de atividades mais complexas.
+
+---
+
 ## 💡 Dicas de Padronização para Evolução Contínua
 
 - **Sintaxe de Texto:** Todas as nomenclaturas técnicas *(Equipe e Analista, não gestor)* foram firmadas na interface e no motor de busca do sistema simultaneamente.
