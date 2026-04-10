@@ -481,7 +481,7 @@ function renderListView(filteredTasks, container) {
                 </div>
 
                 <div style="display:flex; gap:0.5rem; margin-top:1rem;" onclick="event.stopPropagation()">
-                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="cycleStatus('${task.id}')">↻ Status</button>
+                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openStatusPopover('${task.id}', event)">↻ Status</button>
                     <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openEditTaskModal('${task.id}')">✏️ Editar</button>
                     <button class="btn w-full" style="background:#fee2e2; color:#ef4444; border:none; padding:0.3rem; font-size:0.8rem;" onclick="deleteTask('${task.id}')">✕ Excluir</button>
                 </div>
@@ -969,6 +969,56 @@ function renderDashboardView(filteredTasks, container) {
 // -------------------- //
 // API STATUS/ACTIONS   //
 // -------------------- //
+
+let currentStatusTaskId = null;
+
+function openStatusPopover(taskId, event) {
+    if (event) event.stopPropagation();
+    currentStatusTaskId = taskId;
+    
+    const popover = document.getElementById('statusPopover');
+    if (!popover) return;
+    
+    popover.style.display = 'flex';
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    let top = rect.bottom + window.scrollY + 5;
+    let left = rect.left + window.scrollX;
+    
+    if (top + 150 > window.innerHeight + window.scrollY) {
+        top = rect.top + window.scrollY - popover.offsetHeight - 5;
+    }
+    
+    popover.style.top = top + 'px';
+    popover.style.left = left + 'px';
+}
+
+function setStatusFromPopover(newStatus) {
+    if (!currentStatusTaskId) return;
+    
+    db.ref('tasks/' + currentStatusTaskId).update({ status: newStatus }).then(() => {
+        closeStatusPopover();
+        
+        if (document.getElementById('detailsModal') && document.getElementById('detailsModal').classList.contains('active')) {
+            openTaskDetails(currentStatusTaskId);
+        }
+    }).catch(err => alert("Erro ao sincronizar status: " + err.message));
+}
+
+function closeStatusPopover() {
+    const popover = document.getElementById('statusPopover');
+    if (popover) popover.style.display = 'none';
+    currentStatusTaskId = null;
+}
+
+document.addEventListener('click', (e) => {
+    const popover = document.getElementById('statusPopover');
+    if (popover && popover.style.display === 'flex' && !popover.contains(e.target) && !e.target.closest('button[onclick^="openStatusPopover"]')) {
+        closeStatusPopover();
+    }
+});
+
 function cycleStatus(taskId) {
     if (window.event) window.event.stopPropagation(); // Avoid triggering openTaskDetails randomly
     
@@ -1176,7 +1226,7 @@ function openTaskDetails(taskId) {
             </div>
         </div>
         <div class="form-actions" style="margin-top:0; display:flex; gap:0.5rem; justify-content:flex-end;">
-            <button class="btn btn-secondary w-full" style="flex:1;" onclick="cycleStatusAndRefreshDetails('${task.id}')">↻ Alternar Status</button>
+            <button class="btn btn-secondary w-full" style="flex:1;" onclick="openStatusPopover('${task.id}', event)">↻ Alternar Status</button>
             <button class="btn btn-secondary w-full" style="flex:1;" onclick="openEditTaskModal('${task.id}')">✏️ Editar Obra</button>
             <button class="btn w-full" style="flex:1; background:#fee2e2; color:#ef4444; border:none;" onclick="deleteTaskAndCloseDetails('${task.id}')">✕ Excluir Obra</button>
         </div>
@@ -1287,7 +1337,7 @@ function openDayModal(dateStr) {
                 </div>
 
                 <div style="display:flex; gap:0.5rem; margin-top:1rem;" onclick="event.stopPropagation()">
-                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="cycleStatus('${task.id}')">↻ Status</button>
+                    <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openStatusPopover('${task.id}', event)">↻ Status</button>
                     <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openEditTaskModal('${task.id}')">✏️ Editar</button>
                     <button class="btn w-full" style="background:#fee2e2; color:#ef4444; border:none; padding:0.3rem; font-size:0.8rem;" onclick="deleteTaskAndCloseDetails('${task.id}')">✕ Excluir</button>
                 </div>
