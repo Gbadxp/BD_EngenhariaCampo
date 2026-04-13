@@ -238,11 +238,13 @@ function listenForChanges() {
 function renderSidebarTeams() {
     const list = document.getElementById('teamsNavList');
     const select = document.getElementById('taskTeam');
+    const eventSelect = document.getElementById('eventTeam');
     
     if (!list || !select) return;
     
     list.innerHTML = '';
     select.innerHTML = '<option value="" disabled selected>Selecione a equipe</option>';
+    if (eventSelect) eventSelect.innerHTML = '<option value="all" selected>Todas as Equipes</option>';
     
     // Create grouped data
     const groups = {};
@@ -296,6 +298,7 @@ function renderSidebarTeams() {
         details.appendChild(navContainer);
         list.appendChild(details);
         select.appendChild(optGroup);
+        if (eventSelect) eventSelect.appendChild(optGroup.cloneNode(true));
     }
 }
 
@@ -395,10 +398,10 @@ function renderView() {
     
     let filteredTasks = tasks;
     if (currentView !== 'geral') {
-        filteredTasks = tasks.filter(t => t.teamId === currentView);
+        filteredTasks = tasks.filter(t => t.teamId === currentView || (t.isEvent === true && (t.teamId === 'all' || t.teamId == currentView)));
     }
     
-    filteredTasks = filteredTasks.filter(t => activeStatusFilters.includes(t.status));
+    filteredTasks = filteredTasks.filter(t => activeStatusFilters.includes(t.status) || t.isEvent === true);
     
     if (globalDateStart && globalDateEnd) {
         filteredTasks = filteredTasks.filter(t => {
@@ -434,6 +437,35 @@ function renderListView(filteredTasks, container) {
     let html = `<div style="display:grid; gap:1.5rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">`;
     
     filteredTasks.forEach(task => {
+        if (task.isEvent) {
+            const dateObj = new Date(task.date + 'T12:00:00');
+            const dateStr = dateObj.toLocaleDateString('pt-BR');
+            let teamStr = task.teamId === 'all' ? 'Todas as Equipes' : (initialTeams.find(t => t.id == task.teamId)?.name || 'Geral');
+            html += `
+                <div style="background:#fee2e2; border-radius:10px; border:1px solid #f87171; padding:1rem; box-shadow:0 2px 4px rgba(0,0,0,0.02); display:flex; flex-direction:column; cursor:pointer;" onclick="openEventDetails('${task.id}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <span style="font-size:0.85rem; font-weight:800; color:#dc2626; text-transform:uppercase; letter-spacing:0.05em;">🗓️ Evento</span>
+                    </div>
+                    <div style="font-size:1.1rem; color:#dc2626; font-weight:800; margin-bottom:0.4rem;">
+                        ${task.taskType}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #f87171; padding-top:0.8rem; margin-top: auto;">
+                        <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                            <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">Aplicar a: ${teamStr}</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right;">
+                            <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">📅 ${dateStr}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:1rem;" onclick="event.stopPropagation()">
+                        <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openEditEventModal('${task.id}')">✏️ Editar</button>
+                        <button class="btn w-full" style="background:#fca5a5; color:#991b1b; border:none; padding:0.3rem; font-size:0.8rem;" onclick="deleteTask('${task.id}')">✕ Excluir</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
         const team = initialTeams.find(t => t.id === task.teamId);
         const dateObj = new Date(task.date + 'T12:00:00');
         const dateStr = dateObj.toLocaleDateString('pt-BR');
@@ -549,12 +581,19 @@ function renderCalendarView(filteredTasks, container) {
         
         let chipsHtml = '';
         cellTasks.forEach(task => {
-            const team = initialTeams.find(t => t.id === task.teamId);
-            let statusChar = "🟡";
-            if (task.status === 'progress') statusChar = "🔵";
-            if (task.status === 'done') statusChar = "🟢";
-            let sColor = getServiceColor(task.taskType);
-            chipsHtml += `<div class="cal-task-chip" style="border-left-color: ${sColor};" title="${task.taskType || 'Serviço'}" onclick="event.stopPropagation(); openTaskDetails('${task.id}')"><span style="font-size:9px; margin-right:4px;">${statusChar}</span>E${team.id}: ${task.location}</div>`;
+            if (task.isEvent) {
+                let eventTitle = task.taskType || 'Evento';
+                let teamStr = task.teamId === 'all' ? 'Geral' : (initialTeams.find(t => t.id == task.teamId)?.name || 'Equipe');
+                let chipText = task.teamId === 'all' ? `🗓️ ${eventTitle}` : `🗓️ ${eventTitle} (${teamStr})`;
+                chipsHtml += `<div class="cal-task-chip" style="border-left-color: #dc2626; background-color: #fee2e2; color: #dc2626;" title="${eventTitle}" onclick="event.stopPropagation(); openEventDetails('${task.id}')">${chipText}</div>`;
+            } else {
+                const team = initialTeams.find(t => t.id === task.teamId) || {id: '?', name: 'Desconhecida'};
+                let statusChar = "🟡";
+                if (task.status === 'progress') statusChar = "🔵";
+                if (task.status === 'done') statusChar = "🟢";
+                let sColor = getServiceColor(task.taskType);
+                chipsHtml += `<div class="cal-task-chip" style="border-left-color: ${sColor};" title="${task.taskType || 'Serviço'}" onclick="event.stopPropagation(); openTaskDetails('${task.id}')"><span style="font-size:9px; margin-right:4px;">${statusChar}</span>E${team.id}: ${task.location}</div>`;
+            }
         });
         
         html += `
@@ -1290,6 +1329,29 @@ function openDayModal(dateStr) {
     } else {
         let html = `<div style="display:flex; flex-direction:column; gap:1rem;">`;
         dayTasks.forEach(task => {
+            if (task.isEvent) {
+                const dateObjTask = new Date(task.date + 'T12:00:00');
+                const dateStr = dateObjTask.toLocaleDateString('pt-BR');
+                let teamStr = task.teamId === 'all' ? 'Todas as Equipes' : (initialTeams.find(t => t.id == task.teamId)?.name || 'Geral');
+                html += `
+                <div style="background:#fee2e2; border-radius:10px; border:1px solid #f87171; padding:1rem; box-shadow:0 2px 4px rgba(0,0,0,0.02); display:flex; flex-direction:column; cursor:pointer;" onclick="openEventDetails('${task.id}')">
+                    <div style="font-size:0.85rem; font-weight:800; color:#dc2626; text-transform:uppercase; margin-bottom:0.4rem;">
+                        🗓️ Evento
+                    </div>
+                    <h4 style="font-size:1.1rem; font-weight:800; color:#dc2626; margin-bottom:0.2rem;">${task.taskType}</h4>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #f87171; padding-top:0.8rem; margin-top: auto;">
+                        <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">Aplicar a: ${teamStr}</span>
+                        <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">📅 ${dateStr}</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:1rem;" onclick="event.stopPropagation()">
+                        <button class="btn btn-secondary w-full" style="font-size:0.8rem; padding:0.3rem;" onclick="openEditEventModal('${task.id}')">✏️ Editar</button>
+                        <button class="btn w-full" style="background:#fca5a5; color:#991b1b; border:none; padding:0.3rem; font-size:0.8rem;" onclick="deleteTaskAndCloseDetails('${task.id}')">✕ Excluir</button>
+                    </div>
+                </div>
+                `;
+                return;
+            }
+
             const team = initialTeams.find(t => t.id === task.teamId);
             const dateObjTask = new Date(task.date + 'T12:00:00');
             const dateStr = dateObjTask.toLocaleDateString('pt-BR');
@@ -1818,4 +1880,131 @@ function deleteOnCall(id) {
         db.ref('onCalls/' + id).remove()
             .catch(err => alert("Erro ao deletar escala: " + err.message));
     }
+}
+
+// -------------------- //
+// NEW: EVENTS LOGIC    //
+// -------------------- //
+
+function openNewEventModal(forcedDate = null) {
+    document.getElementById('eventModal').classList.add('active');
+    document.getElementById('eventForm').reset();
+    document.getElementById('eventId').value = '';
+    
+    const dateInput = document.getElementById('eventDate');
+    if (dateInput) {
+        if(forcedDate) dateInput.value = forcedDate;
+        else dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    
+    const teamSelect = document.getElementById('eventTeam');
+    if (currentView !== 'geral' && currentView !== 'all' && teamSelect) {
+        teamSelect.value = currentView;
+    } else if (teamSelect) {
+        teamSelect.value = 'all';
+    }
+    
+    document.getElementById('eventModalTitle').innerText = 'Agendar Novo Evento';
+    closeDayModal();
+}
+
+function closeEventModal() {
+    document.getElementById('eventModal').classList.remove('active');
+}
+
+function handleEventSubmit(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('eventTitle').value;
+    const teamId = document.getElementById('eventTeam').value;
+    const date = document.getElementById('eventDate').value;
+    const dateEndEl = document.getElementById('eventDateEnd');
+    const dateEnd = dateEndEl && dateEndEl.value ? dateEndEl.value : date;
+    const description = document.getElementById('eventDescription').value;
+    
+    if (dateEnd && dateEnd < date) {
+        alert("Erro: A data de término não pode ser menor que a data inicial.");
+        return;
+    }
+    
+    const editingId = document.getElementById('eventId').value;
+    
+    const eventData = {
+        isEvent: true,
+        taskType: title,
+        teamId: teamId || 'all',
+        date,
+        dateEnd,
+        description,
+        status: 'done', // ensures it passes status filters and doesn't clutter pending logic
+        location: title
+    };
+
+    if (editingId) {
+        db.ref('tasks/' + editingId).update(eventData)
+            .then(() => closeEventModal()).catch(err => alert("Erro ao editar evento: " + err.message));
+    } else {
+        const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
+        eventData.id = newId;
+        db.ref('tasks/' + newId).set(eventData)
+            .then(() => closeEventModal())
+            .catch(err => alert("Erro ao cadastrar evento: " + err.message));
+    }
+}
+
+function openEditEventModal(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    document.getElementById('eventId').value = task.id;
+    document.getElementById('eventTitle').value = task.taskType || '';
+    document.getElementById('eventTeam').value = task.teamId || 'all';
+    document.getElementById('eventDate').value = task.date;
+    document.getElementById('eventDateEnd').value = task.dateEnd || '';
+    document.getElementById('eventDescription').value = task.description || '';
+    
+    document.getElementById('eventModalTitle').innerText = 'Editar Evento';
+    
+    closeDetailsModal();
+    closeDayModal();
+    
+    document.getElementById('eventModal').classList.add('active');
+}
+
+function openEventDetails(eventId) {
+    const task = tasks.find(t => t.id === eventId);
+    if (!task) return;
+    
+    const dbContainer = document.getElementById('detailsModalBody');
+    const dateObj = new Date(task.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('pt-BR');
+    let teamStr = task.teamId === 'all' ? 'Todas as Equipes' : (initialTeams.find(t => t.id == task.teamId)?.name || 'Geral');
+    
+    dbContainer.innerHTML = `
+        <div style="margin-bottom: 1rem;">
+            <span style="font-size:0.85rem; font-weight:800; color:#dc2626; text-transform:uppercase; display:flex; align-items:center; gap:0.4rem; margin-bottom: 0.4rem;">
+                🗓️ Evento no Calendário
+            </span>
+            <span style="font-size:1.2rem; color:var(--text-main); font-weight:800; display:block; margin-bottom: 0.8rem;">
+                ${task.taskType}
+            </span>
+            
+            ${task.description ? `<p style="font-size:1rem; color:var(--text-muted); margin-top:0.8rem; line-height:1.5;">${task.description}</p>` : ''}
+        </div>
+        <div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed var(--border-color); padding-top:1rem;">
+            <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">Aplicação: ${teamStr}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">📅 ${dateStr} ${task.dateEnd && task.dateEnd !== task.date ? ' até ' + new Date(task.dateEnd+'T12:00:00').toLocaleDateString('pt-BR').substring(0,5) : ''}</span>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top:0; display:flex; gap:0.5rem; justify-content:flex-end;">
+            <button class="btn btn-secondary w-full" style="flex:1;" onclick="openEditEventModal('${task.id}')">✏️ Editar Evento</button>
+            <button class="btn w-full" style="flex:1; background:#fee2e2; color:#ef4444; border:none;" onclick="deleteTaskAndCloseDetails('${task.id}')">✕ Excluir</button>
+        </div>
+    `;
+    
+    document.querySelector('#detailsModal .modal-header h3').innerText = "Detalhes do Evento";
+    document.getElementById('detailsModal').classList.add('active');
 }

@@ -258,7 +258,7 @@ body {
 
 .view-container {
     padding: 2.5rem;
-    max-width: 1400px;
+    max-width: 100%;
 }
 
 /* Modals */
