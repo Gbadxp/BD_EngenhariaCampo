@@ -449,6 +449,7 @@ function renderListView(filteredTasks, container) {
                     <div style="font-size:1.1rem; color:#dc2626; font-weight:800; margin-bottom:0.4rem;">
                         ${task.taskType}
                     </div>
+                    ${task.description ? `<p style="font-size:0.85rem; color:#991b1b; margin-bottom:0.8rem; line-height:1.4;">${task.description}</p>` : ''}
                     <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #f87171; padding-top:0.8rem; margin-top: auto;">
                         <div style="display:flex; flex-direction:column; gap:0.2rem;">
                             <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">Aplicar a: ${teamStr}</span>
@@ -1339,6 +1340,7 @@ function openDayModal(dateStr) {
                         🗓️ Evento
                     </div>
                     <h4 style="font-size:1.1rem; font-weight:800; color:#dc2626; margin-bottom:0.2rem;">${task.taskType}</h4>
+                    ${task.description ? `<p style="font-size:0.85rem; color:#991b1b; margin-bottom:0.8rem; line-height:1.4;">${task.description}</p>` : ''}
                     <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #f87171; padding-top:0.8rem; margin-top: auto;">
                         <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">Aplicar a: ${teamStr}</span>
                         <span style="font-size:0.8rem; color:#dc2626; font-weight:500;">📅 ${dateStr}</span>
