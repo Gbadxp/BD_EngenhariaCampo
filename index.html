@@ -20,6 +20,26 @@
 </head>
 <body>
     <div id="app">
+        <!-- Login Overlay -->
+        <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+            <div style="background: var(--bg-card); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%;">
+                <img src="logo-light.png" alt="Logo" class="logo-light" style="max-width: 150px; margin-bottom: 1.5rem;">
+                <img src="logo-dark.png" alt="Logo" class="logo-dark" style="max-width: 150px; margin-bottom: 1.5rem; display: none;">
+                <h2 style="margin-bottom: 1.5rem; font-size: 1.4rem;">Acesso ao Fiber<span class="highlight" style="color: var(--primary);">Planner</span></h2>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group" style="text-align: left;">
+                        <label>Login</label>
+                        <input type="text" id="loginUsername" required placeholder="Digite seu login" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                    </div>
+                    <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                        <label>Senha</label>
+                        <input type="password" id="loginPassword" required placeholder="Digite sua senha" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                    </div>
+                    <div id="loginError" style="color: #dc2626; font-size: 0.85rem; margin-bottom: 1rem; display: none; font-weight: 500;">Login ou senha incorretos.</div>
+                    <button type="submit" class="btn btn-primary w-full" style="padding: 0.8rem; font-size: 1rem;">Entrar</button>
+                </form>
+            </div>
+        </div>
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-header" style="display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center; padding: 0.2rem 1rem 0 1rem; border-bottom: none;">
