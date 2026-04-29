@@ -1169,7 +1169,7 @@ function handleTaskSubmit(e) {
         supabase.from('tasks').update({
             taskType, teamId, manager, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
         }).eq('id', editingId)
-          .then(() => closeModal())
+          .then(({error}) => { if(error) throw error; closeModal(); })
           .catch(err => alert("Erro ao editar: " + err.message));
     } else {
         // Create new task via Supabase
@@ -1179,7 +1179,7 @@ function handleTaskSubmit(e) {
             location, coordinates, contact, description, status: 'pending', manager, isEvent: false
         };
         supabase.from('tasks').insert([newTask])
-            .then(() => closeModal())
+            .then(({error}) => { if(error) throw error; closeModal(); })
             .catch(err => alert("Erro ao cadastrar: " + err.message));
     }
 }
@@ -1615,10 +1615,14 @@ function handleTeamSubmit(e) {
     const group = document.getElementById('teamGroupInput').value;
     
     if (idField) {
-        supabase.from('teams').update({ name, group }).eq('id', idField).then(() => closeTeamForm());
+        supabase.from('teams').update({ name, group }).eq('id', idField)
+          .then(({error}) => { if(error) throw error; closeTeamForm(); })
+          .catch(err => alert("Erro ao atualizar equipe: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        supabase.from('teams').insert([{ id: newId, name, group }]).then(() => closeTeamForm());
+        supabase.from('teams').insert([{ id: newId, name, group }])
+          .then(({error}) => { if(error) throw error; closeTeamForm(); })
+          .catch(err => alert("Erro ao cadastrar equipe: " + err.message));
     }
 }
 
@@ -1684,12 +1688,12 @@ function handleManagerSubmit(e) {
     
     if (idField) {
         supabase.from('managers').update({ name }).eq('id', idField)
-          .then(() => closeManagerForm())
+          .then(({error}) => { if(error) throw error; closeManagerForm(); })
           .catch(err => alert("Erro ao atualizar analista: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
         supabase.from('managers').insert([{ id: newId, name }])
-          .then(() => closeManagerForm())
+          .then(({error}) => { if(error) throw error; closeManagerForm(); })
           .catch(err => alert("Erro ao cadastrar analista: " + err.message));
     }
 }
@@ -1833,12 +1837,12 @@ function handleOnCallSubmit(e) {
     
     if (idField) {
         supabase.from('on_calls').update({ teamIds: selectedOptions, startDate, endDate }).eq('id', idField)
-          .then(() => closeOnCallForm())
+          .then(({error}) => { if(error) throw error; closeOnCallForm(); })
           .catch(err => alert("Erro ao editar escala: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
         supabase.from('on_calls').insert([{ id: newId, teamIds: selectedOptions, startDate, endDate }])
-          .then(() => closeOnCallForm())
+          .then(({error}) => { if(error) throw error; closeOnCallForm(); })
           .catch(err => alert("Erro ao salvar escala: " + err.message));
     }
 }
@@ -1910,12 +1914,13 @@ function handleEventSubmit(e) {
 
     if (editingId) {
         supabase.from('tasks').update(eventData).eq('id', editingId)
-            .then(() => closeEventModal()).catch(err => alert("Erro ao editar evento: " + err.message));
+            .then(({error}) => { if(error) throw error; closeEventModal(); })
+            .catch(err => alert("Erro ao editar evento: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         eventData.id = newId;
         supabase.from('tasks').insert([eventData])
-            .then(() => closeEventModal())
+            .then(({error}) => { if(error) throw error; closeEventModal(); })
             .catch(err => alert("Erro ao cadastrar evento: " + err.message));
     }
 }
