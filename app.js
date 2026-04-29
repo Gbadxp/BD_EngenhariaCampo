@@ -15,7 +15,41 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let tasks = [];
-let initialTeams = []; // Transformed from static data.js into dynamic global array synced with Firebase
+let initialTeams = [
+    // EQUIPES DE LINHA (LINHEIROS) - Equipe do Anderson
+    { id: 1, name: "Marcos Ageu", group: "Linheiros - Equipe do Anderson" },
+    { id: 2, name: "Anderson Aparecido", group: "Linheiros - Equipe do Anderson" },
+    { id: 3, name: "Francisco Rocha", group: "Linheiros - Equipe do Anderson" },
+    { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Equipe do Anderson" },
+    { id: 5, name: "André", group: "Linheiros - Equipe do Anderson" },
+
+    // EQUIPES DE LINHA (LINHEIROS) - Equipe do Albertino
+    { id: 6, name: "Albertino", group: "Linheiros - Equipe do Albertino" },
+    { id: 7, name: "Huilian Wilkens", group: "Linheiros - Equipe do Albertino" },
+    { id: 8, name: "Manoel Pinto", group: "Linheiros - Equipe do Albertino" },
+    { id: 9, name: "Airton Freire", group: "Linheiros - Equipe do Albertino" },
+    { id: 10, name: "Ronaldo", group: "Linheiros - Equipe do Albertino" },
+    { id: 11, name: "Renan", group: "Linheiros - Equipe do Albertino" },
+
+    // EQUIPES DE EMENDA (EMENDADORES)
+    { id: 12, name: "José Muniz / João Maidson", group: "Emendadores" },
+    { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores" },
+    { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores" },
+    { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores" },
+    { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores" },
+    { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores" },
+    { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
+    { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
+
+    // MULTISKILL
+    { id: 20, name: "Railton Kley", group: "Multskill" },
+    { id: 21, name: "Jhonatan Renan", group: "Multskill" },
+    { id: 22, name: "Arthur Queiroz", group: "Multskill" },
+
+    // AFASTADOS
+    { id: 23, name: "Maquessoel Marques", group: "Afastados" },
+    { id: 24, name: "Renan Diniz", group: "Afastados" }
+];
 let initialManagers = []; // Dynamic array of Analista Responsável
 let currentView = 'geral'; 
 let currentDisplayMode = 'list';
@@ -41,6 +75,46 @@ function updateDateFilter() {
 let currentOnCall = null;
 let onCallSchedules = [];
 
+function forceRestoreTeams() {
+    // Restaurando a configuração exata solicitada pelo usuário para o Firebase
+    const teamsToRestore = [
+        // EQUIPES DE LINHA (LINHEIROS) - Equipe do Anderson
+        { id: 1, name: "Marcos Ageu", group: "Linheiros - Equipe do Anderson" },
+        { id: 2, name: "Anderson Aparecido", group: "Linheiros - Equipe do Anderson" },
+        { id: 3, name: "Francisco Rocha", group: "Linheiros - Equipe do Anderson" },
+        { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Equipe do Anderson" },
+        { id: 5, name: "André", group: "Linheiros - Equipe do Anderson" },
+
+        // EQUIPES DE LINHA (LINHEIROS) - Equipe do Albertino
+        { id: 6, name: "Albertino", group: "Linheiros - Equipe do Albertino" },
+        { id: 7, name: "Huilian Wilkens", group: "Linheiros - Equipe do Albertino" },
+        { id: 8, name: "Manoel Pinto", group: "Linheiros - Equipe do Albertino" },
+        { id: 9, name: "Airton Freire", group: "Linheiros - Equipe do Albertino" },
+        { id: 10, name: "Ronaldo", group: "Linheiros - Equipe do Albertino" },
+        { id: 11, name: "Renan", group: "Linheiros - Equipe do Albertino" },
+
+        // EQUIPES DE EMENDA (EMENDADORES)
+        { id: 12, name: "José Muniz / João Maidson", group: "Emendadores" },
+        { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores" },
+        { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores" },
+        { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores" },
+        { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores" },
+        { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores" },
+        { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
+        { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
+
+        // MULTISKILL
+        { id: 20, name: "Railton Kley", group: "Multskill" },
+        { id: 21, name: "Jhonatan Renan", group: "Multskill" },
+        { id: 22, name: "Arthur Queiroz", group: "Multskill" },
+
+        // AFASTADOS
+        { id: 23, name: "Maquessoel Marques", group: "Afastados" },
+        { id: 24, name: "Renan Diniz", group: "Afastados" }
+    ];
+    teamsToRestore.forEach(t => db.ref('teams/' + t.id).set(t));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
     initApp();
@@ -48,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     loadTheme();
+    forceRestoreTeams(); // Força atualização/restauração da nova lista de colaboradores
     renderSidebarTeams();
     updateDateDisplay();
     listenForChanges(); // Boots up the Database observer instead of loadData
@@ -151,30 +226,32 @@ function listenForChanges() {
                 renderView();
             }
         } else {
-            // Seed DB on the very first empty run with core 19 architecture
+            // Seed DB on the very first empty run
             const coreSeed = [
-                { id: 1, name: "Marcos Ageu", group: "Linheiros - Porto Velho/RO" },
-                { id: 2, name: "Anderson Aparecido", group: "Linheiros - Porto Velho/RO" },
-                { id: 3, name: "Francisco Rocha", group: "Linheiros - Porto Velho/RO" },
-                { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Porto Velho/RO" },
-                { id: 5, name: "André", group: "Linheiros - Porto Velho/RO" },
-                { id: 6, name: "Albertino", group: "Linheiros - Porto Velho/RO" },
-                { id: 7, name: "Huilian Wilkens", group: "Linheiros - Porto Velho/RO" },
-                { id: 8, name: "Manoel Pinto", group: "Linheiros - Porto Velho/RO" },
-                { id: 9, name: "Airton Freire", group: "Linheiros - Porto Velho/RO" },
-                { id: 10, name: "Ronaldo", group: "Linheiros - Porto Velho/RO" },
-                { id: 11, name: "Renan", group: "Linheiros - Porto Velho/RO" },
-                { id: 12, name: "José Muniz / João Maidson", group: "Emendadores - Porto Velho/RO" },
-                { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores - Porto Velho/RO" },
-                { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores - Porto Velho/RO" },
-                { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores - Porto Velho/RO" },
-                { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores - Porto Velho/RO" },
-                { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores - Porto Velho/RO" },
+                { id: 1, name: "Marcos Ageu", group: "Linheiros - Equipe do Anderson" },
+                { id: 2, name: "Anderson Aparecido", group: "Linheiros - Equipe do Anderson" },
+                { id: 3, name: "Francisco Rocha", group: "Linheiros - Equipe do Anderson" },
+                { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Equipe do Anderson" },
+                { id: 5, name: "André", group: "Linheiros - Equipe do Anderson" },
+                { id: 6, name: "Albertino", group: "Linheiros - Equipe do Albertino" },
+                { id: 7, name: "Huilian Wilkens", group: "Linheiros - Equipe do Albertino" },
+                { id: 8, name: "Manoel Pinto", group: "Linheiros - Equipe do Albertino" },
+                { id: 9, name: "Airton Freire", group: "Linheiros - Equipe do Albertino" },
+                { id: 10, name: "Ronaldo", group: "Linheiros - Equipe do Albertino" },
+                { id: 11, name: "Renan", group: "Linheiros - Equipe do Albertino" },
+                { id: 12, name: "José Muniz / João Maidson", group: "Emendadores" },
+                { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores" },
+                { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores" },
+                { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores" },
+                { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores" },
+                { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores" },
                 { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
                 { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
                 { id: 20, name: "Railton Kley", group: "Multskill" },
                 { id: 21, name: "Jhonatan Renan", group: "Multskill" },
-                { id: 22, name: "Arthur Queiroz", group: "Multskill" }
+                { id: 22, name: "Arthur Queiroz", group: "Multskill" },
+                { id: 23, name: "Maquessoel Marques", group: "Afastados" },
+                { id: 24, name: "Renan Diniz", group: "Afastados" }
             ];
             coreSeed.forEach(t => db.ref('teams/' + t.id).set(t));
             initialTeams = coreSeed;
