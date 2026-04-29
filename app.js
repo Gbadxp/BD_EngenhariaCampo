@@ -1,18 +1,7 @@
-// Firebase Configuration provided by the user
-const firebaseConfig = {
-  apiKey: "AIzaSyDF40Ms9mvNvmq40l2okhoVlzRMMlGNum0",
-  authDomain: "bd-engenhariacampo.firebaseapp.com",
-  databaseURL: "https://bd-engenhariacampo-default-rtdb.firebaseio.com",
-  projectId: "bd-engenhariacampo",
-  storageBucket: "bd-engenhariacampo.firebasestorage.app",
-  messagingSenderId: "596406239512",
-  appId: "1:596406239512:web:9577db591f52f1c2311e6d",
-  measurementId: "G-224E2X3Q2X"
-};
-
-// Initialize Firebase App and Database
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// Supabase Configuration
+const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
+const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let tasks = [];
 let initialTeams = [
@@ -75,45 +64,7 @@ function updateDateFilter() {
 let currentOnCall = null;
 let onCallSchedules = [];
 
-function forceRestoreTeams() {
-    // Restaurando a configuração exata solicitada pelo usuário para o Firebase
-    const teamsToRestore = [
-        // EQUIPES DE LINHA (LINHEIROS) - Equipe do Anderson
-        { id: 1, name: "Marcos Ageu", group: "Linheiros - Equipe do Anderson" },
-        { id: 2, name: "Anderson Aparecido", group: "Linheiros - Equipe do Anderson" },
-        { id: 3, name: "Francisco Rocha", group: "Linheiros - Equipe do Anderson" },
-        { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Equipe do Anderson" },
-        { id: 5, name: "André", group: "Linheiros - Equipe do Anderson" },
-
-        // EQUIPES DE LINHA (LINHEIROS) - Equipe do Albertino
-        { id: 6, name: "Albertino", group: "Linheiros - Equipe do Albertino" },
-        { id: 7, name: "Huilian Wilkens", group: "Linheiros - Equipe do Albertino" },
-        { id: 8, name: "Manoel Pinto", group: "Linheiros - Equipe do Albertino" },
-        { id: 9, name: "Airton Freire", group: "Linheiros - Equipe do Albertino" },
-        { id: 10, name: "Ronaldo", group: "Linheiros - Equipe do Albertino" },
-        { id: 11, name: "Renan", group: "Linheiros - Equipe do Albertino" },
-
-        // EQUIPES DE EMENDA (EMENDADORES)
-        { id: 12, name: "José Muniz / João Maidson", group: "Emendadores" },
-        { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores" },
-        { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores" },
-        { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores" },
-        { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores" },
-        { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores" },
-        { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
-        { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
-
-        // MULTISKILL
-        { id: 20, name: "Railton Kley", group: "Multskill" },
-        { id: 21, name: "Jhonatan Renan", group: "Multskill" },
-        { id: 22, name: "Arthur Queiroz", group: "Multskill" },
-
-        // AFASTADOS
-        { id: 23, name: "Maquessoel Marques", group: "Afastados" },
-        { id: 24, name: "Renan Diniz", group: "Afastados" }
-    ];
-    teamsToRestore.forEach(t => db.ref('teams/' + t.id).set(t));
-}
+// Firebase force restore removido
 
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
@@ -122,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     loadTheme();
-    forceRestoreTeams(); // Força atualização/restauração da nova lista de colaboradores
     renderSidebarTeams();
     updateDateDisplay();
     listenForChanges(); // Boots up the Database observer instead of loadData
@@ -172,145 +122,78 @@ function getServiceColor(typeStr) {
     return map[typeStr] || "var(--primary)";
 }
 
-// Global Firebase Realtime Listener
-function listenForChanges() {
-    // 1. Listen for Teams
-    db.ref('teams').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            initialTeams = Object.values(data);
-            
-            // Clean up duplicates if the user or sync process created them
-            let nameRegistry = new Set();
-            let toRemove = [];
-            let deduplicatedTeams = [];
-            
-            initialTeams.forEach(t => {
-                const normName = t.name ? t.name.trim().toLowerCase() : "";
-                if (normName && nameRegistry.has(normName)) {
-                    toRemove.push(t.id);
-                } else {
-                    if (normName) nameRegistry.add(normName);
-                    deduplicatedTeams.push(t);
+// Global Supabase Realtime Listener
+async function listenForChanges() {
+    // 1. Carregar dados iniciais de todas as tabelas
+    const [{data: teamsData}, {data: managersData}, {data: tasksData}, {data: onCallsData}] = await Promise.all([
+        supabase.from('teams').select('*'),
+        supabase.from('managers').select('*'),
+        supabase.from('tasks').select('*'),
+        supabase.from('on_calls').select('*')
+    ]);
+
+    // Atualizando arrays globais
+    if (teamsData) initialTeams = teamsData.map(t => ({id: t.id, name: t.name, group: t.group}));
+    if (managersData) initialManagers = managersData;
+    if (tasksData) tasks = tasksData;
+    if (onCallsData) onCallSchedules = onCallsData;
+
+    // Renderizar views iniciais
+    renderSidebarTeams();
+    if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
+        renderTeamManagerList();
+    }
+    renderManagerOptions();
+    if(document.getElementById('managerManagerModal') && document.getElementById('managerManagerModal').classList.contains('active')){
+        renderManagerList();
+    }
+    if(document.getElementById('onCallManagerModal') && document.getElementById('onCallManagerModal').classList.contains('active')){
+        renderOnCallList();
+    }
+    renderView();
+
+    // 2. Inscrever-se para atualizações em tempo real (Realtime Sync)
+    supabase.channel('custom-all-channel')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public' },
+            (payload) => {
+                const table = payload.table;
+                const eventType = payload.eventType;
+                const newRec = payload.new;
+                const oldRec = payload.old;
+
+                if (table === 'teams') {
+                    const tData = newRec ? {id: newRec.id, name: newRec.name, group: newRec.group} : null;
+                    if (eventType === 'INSERT') initialTeams.push(tData);
+                    if (eventType === 'UPDATE') initialTeams = initialTeams.map(t => t.id == newRec.id ? tData : t);
+                    if (eventType === 'DELETE') initialTeams = initialTeams.filter(t => t.id != oldRec.id);
+                    renderSidebarTeams();
+                    if(document.getElementById('teamManagerModal')?.classList.contains('active')) renderTeamManagerList();
                 }
-            });
-            
-            toRemove.forEach(id => {
-                db.ref('teams/' + id).remove();
-            });
-            
-            initialTeams = deduplicatedTeams;
-            
-            // Sync new Multskill team members if they haven't been added yet
-            const multskillSeed = [
-                { id: 20, name: "Railton Kley", group: "Multskill" },
-                { id: 21, name: "Jhonatan Renan", group: "Multskill" },
-                { id: 22, name: "Arthur Queiroz", group: "Multskill" }
-            ];
-            
-            let changed = false;
-            multskillSeed.forEach(t => {
-                const normName = t.name.trim().toLowerCase();
-                if (!initialTeams.find(existing => existing.id == t.id || (existing.name && existing.name.trim().toLowerCase() === normName))) {
-                    db.ref('teams/' + t.id).set(t);
-                    initialTeams.push(t);
-                    changed = true;
+                else if (table === 'managers') {
+                    if (eventType === 'INSERT') initialManagers.push(newRec);
+                    if (eventType === 'UPDATE') initialManagers = initialManagers.map(m => m.id == newRec.id ? newRec : m);
+                    if (eventType === 'DELETE') initialManagers = initialManagers.filter(m => m.id != oldRec.id);
+                    renderManagerOptions();
+                    if(document.getElementById('managerManagerModal')?.classList.contains('active')) renderManagerList();
                 }
-            });
-            
-            if (changed || toRemove.length > 0) {
-                renderSidebarTeams();
-                if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
-                    if(typeof renderTeamManagerList === 'function') renderTeamManagerList();
+                else if (table === 'tasks') {
+                    if (eventType === 'INSERT') tasks.push(newRec);
+                    if (eventType === 'UPDATE') tasks = tasks.map(t => t.id == newRec.id ? newRec : t);
+                    if (eventType === 'DELETE') tasks = tasks.filter(t => t.id != oldRec.id);
                 }
-                renderView();
+                else if (table === 'on_calls') {
+                    if (eventType === 'INSERT') onCallSchedules.push(newRec);
+                    if (eventType === 'UPDATE') onCallSchedules = onCallSchedules.map(o => o.id == newRec.id ? newRec : o);
+                    if (eventType === 'DELETE') onCallSchedules = onCallSchedules.filter(o => o.id != oldRec.id);
+                    if(document.getElementById('onCallManagerModal')?.classList.contains('active')) renderOnCallList();
+                }
+                
+                renderView(); // Re-renderizar painel com dados frescos
             }
-        } else {
-            // Seed DB on the very first empty run
-            const coreSeed = [
-                { id: 1, name: "Marcos Ageu", group: "Linheiros - Equipe do Anderson" },
-                { id: 2, name: "Anderson Aparecido", group: "Linheiros - Equipe do Anderson" },
-                { id: 3, name: "Francisco Rocha", group: "Linheiros - Equipe do Anderson" },
-                { id: 4, name: "Adrielyton Manoel", group: "Linheiros - Equipe do Anderson" },
-                { id: 5, name: "André", group: "Linheiros - Equipe do Anderson" },
-                { id: 6, name: "Albertino", group: "Linheiros - Equipe do Albertino" },
-                { id: 7, name: "Huilian Wilkens", group: "Linheiros - Equipe do Albertino" },
-                { id: 8, name: "Manoel Pinto", group: "Linheiros - Equipe do Albertino" },
-                { id: 9, name: "Airton Freire", group: "Linheiros - Equipe do Albertino" },
-                { id: 10, name: "Ronaldo", group: "Linheiros - Equipe do Albertino" },
-                { id: 11, name: "Renan", group: "Linheiros - Equipe do Albertino" },
-                { id: 12, name: "José Muniz / João Maidson", group: "Emendadores" },
-                { id: 13, name: "Iury Lourran / Franciel Machado", group: "Emendadores" },
-                { id: 14, name: "Emerson Pinto / Breno Luis", group: "Emendadores" },
-                { id: 15, name: "Alecsandro Pantoja / Marcelo Lima", group: "Emendadores" },
-                { id: 16, name: "Marcos Bitercout / Fabrício", group: "Emendadores" },
-                { id: 17, name: "Antônio Carlos / Junior Pessoa", group: "Emendadores" },
-                { id: 18, name: "Marcelo Augusto / Adenilson", group: "Emendadores - Extrema/RO" },
-                { id: 19, name: "Italo Gabriel / Everson", group: "Emendadores - Nova Mamoré/RO" },
-                { id: 20, name: "Railton Kley", group: "Multskill" },
-                { id: 21, name: "Jhonatan Renan", group: "Multskill" },
-                { id: 22, name: "Arthur Queiroz", group: "Multskill" },
-                { id: 23, name: "Maquessoel Marques", group: "Afastados" },
-                { id: 24, name: "Renan Diniz", group: "Afastados" }
-            ];
-            coreSeed.forEach(t => db.ref('teams/' + t.id).set(t));
-            initialTeams = coreSeed;
-        }
-        renderSidebarTeams();
-        if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
-            renderTeamManagerList();
-        }
-        // Force timeline re-render if team names changed
-        renderView(); 
-    });
-
-    // 1b. Listen for Managers
-    db.ref('managers').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            initialManagers = Object.values(data);
-        } else {
-            const seedManagers = [
-                { id: "1", name: "GEORGE GOMES" },
-                { id: "2", name: "ALEX ALVES" },
-                { id: "3", name: "ANDERSON FREITAS" },
-                { id: "4", name: "LUIS DIOGENES" },
-                { id: "5", name: "DIEGO MATIAS" }
-            ];
-            seedManagers.forEach(m => db.ref('managers/' + m.id).set(m));
-            initialManagers = seedManagers;
-        }
-        renderManagerOptions();
-        if(document.getElementById('managerManagerModal') && document.getElementById('managerManagerModal').classList.contains('active')){
-            renderManagerList();
-        }
-        renderView();
-    });
-
-    // 2. Listen for Tasks
-    db.ref('tasks').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            tasks = Object.values(data);
-        } else {
-            tasks = [];
-        }
-        // Force the app to naturally react to remote changes
-        renderView();
-    });
-
-    // 3. Listen for On-Calls
-    db.ref('onCalls').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            onCallSchedules = Object.values(data);
-        } else {
-            onCallSchedules = [];
-        }
-        if(document.getElementById('onCallManagerModal') && document.getElementById('onCallManagerModal').classList.contains('active')){
-            if(typeof renderOnCallList === 'function') renderOnCallList();
-        }
-    });
+        )
+        .subscribe();
 }
 
 function renderSidebarTeams() {
@@ -1115,7 +998,7 @@ function openStatusPopover(taskId, event) {
 function setStatusFromPopover(newStatus) {
     if (!currentStatusTaskId) return;
     
-    db.ref('tasks/' + currentStatusTaskId).update({ status: newStatus }).then(() => {
+    supabase.from('tasks').update({ status: newStatus }).eq('id', currentStatusTaskId).then(() => {
         closeStatusPopover();
         
         if (document.getElementById('detailsModal') && document.getElementById('detailsModal').classList.contains('active')) {
@@ -1147,12 +1030,12 @@ function cycleStatus(taskId) {
     if (task.status === 'pending') nextStatus = 'progress';
     else if (task.status === 'progress') nextStatus = 'done';
     
-    db.ref('tasks/' + taskId).update({ status: nextStatus }).catch(err => alert("Erro ao sincronizar status: " + err.message));
+    supabase.from('tasks').update({ status: nextStatus }).eq('id', taskId).catch(err => alert("Erro ao sincronizar status: " + err.message));
 }
 
 function deleteTask(taskId) {
     if (confirm("Tem certeza que deseja excluir esta demanda permanentemente?")) {
-        db.ref('tasks/' + taskId).remove().catch(err => alert("Erro ao excluir: " + err.message));
+        supabase.from('tasks').delete().eq('id', taskId).catch(err => alert("Erro ao excluir: " + err.message));
     }
 }
 
@@ -1282,18 +1165,20 @@ function handleTaskSubmit(e) {
     const editingId = document.getElementById('taskId').value;
     
     if (editingId) {
-        // Update existing task via Firebase
-        db.ref('tasks/' + editingId).update({
-            teamId, manager, taskType, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
-        }).then(() => closeModal()).catch(err => alert("Erro ao editar: " + err.message));
+        // Update existing task via Supabase
+        supabase.from('tasks').update({
+            taskType, teamId, manager, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
+        }).eq('id', editingId)
+          .then(() => closeModal())
+          .catch(err => alert("Erro ao editar: " + err.message));
     } else {
-        // Create new task via Firebase
+        // Create new task via Supabase
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         const newTask = {
-            id: newId, teamId, manager, taskType, date, dateEnd, timeStart, timeEnd,
-            location, coordinates, contact, description, status: 'pending'
+            id: newId, taskType, teamId, date, dateEnd, timeStart, timeEnd,
+            location, coordinates, contact, description, status: 'pending', manager, isEvent: false
         };
-        db.ref('tasks/' + newId).set(newTask)
+        supabase.from('tasks').insert([newTask])
             .then(() => closeModal())
             .catch(err => alert("Erro ao cadastrar: " + err.message));
     }
@@ -1364,13 +1249,12 @@ function cycleStatusAndRefreshDetails(taskId) {
 
 function deleteTaskAndCloseDetails(taskId) {
     if (confirm("Tem certeza que deseja excluir esta demanda permanentemente?")) {
-        db.ref('tasks/' + taskId).remove().then(() => {
+        supabase.from('tasks').delete().eq('id', taskId).then(() => {
             closeDetailsModal();
             // Also refresh the Day Modal actively
             const dayModal = document.getElementById('dayModal');
             if(dayModal && dayModal.classList.contains('active')){
                const currentDayAttr = dayModal.getAttribute('data-current-date');
-               // Small timeout due to async Firebase snapshot pushing back
                if(currentDayAttr) setTimeout(() => openDayModal(currentDayAttr), 100);
             }
         }).catch(err => alert("Erro ao excluir: " + err.message));
@@ -1731,16 +1615,16 @@ function handleTeamSubmit(e) {
     const group = document.getElementById('teamGroupInput').value;
     
     if (idField) {
-        db.ref('teams/' + idField).update({ name, group }).then(() => closeTeamForm());
+        supabase.from('teams').update({ name, group }).eq('id', idField).then(() => closeTeamForm());
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        db.ref('teams/' + newId).set({ id: newId, name, group }).then(() => closeTeamForm());
+        supabase.from('teams').insert([{ id: newId, name, group }]).then(() => closeTeamForm());
     }
 }
 
 function deleteTeam(id) {
     if(confirm("Excluir esta equipe permanentemente? (Ficará sem nome nas demandas antigas)")) {
-        db.ref('teams/' + id).remove();
+        supabase.from('teams').delete().eq('id', id);
     }
 }
 
@@ -1799,16 +1683,20 @@ function handleManagerSubmit(e) {
     const name = document.getElementById('managerNameInput').value;
     
     if (idField) {
-        db.ref('managers/' + idField).update({ name }).then(() => closeManagerForm());
+        supabase.from('managers').update({ name }).eq('id', idField)
+          .then(() => closeManagerForm())
+          .catch(err => alert("Erro ao atualizar analista: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        db.ref('managers/' + newId).set({ id: newId, name }).then(() => closeManagerForm());
+        supabase.from('managers').insert([{ id: newId, name }])
+          .then(() => closeManagerForm())
+          .catch(err => alert("Erro ao cadastrar analista: " + err.message));
     }
 }
 
 function deleteManager(id) {
     if(confirm("Excluir este gestor permanentemente? (Isso não alterará o nome nas demandas antigas já finalizadas)")) {
-        db.ref('managers/' + id).remove();
+        supabase.from('managers').delete().eq('id', id);
     }
 }
 
@@ -1944,12 +1832,12 @@ function handleOnCallSubmit(e) {
     }
     
     if (idField) {
-        db.ref('onCalls/' + idField).update({ teamIds: selectedOptions, startDate, endDate })
+        supabase.from('on_calls').update({ teamIds: selectedOptions, startDate, endDate }).eq('id', idField)
           .then(() => closeOnCallForm())
           .catch(err => alert("Erro ao editar escala: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        db.ref('onCalls/' + newId).set({ id: newId, teamIds: selectedOptions, startDate, endDate })
+        supabase.from('on_calls').insert([{ id: newId, teamIds: selectedOptions, startDate, endDate }])
           .then(() => closeOnCallForm())
           .catch(err => alert("Erro ao salvar escala: " + err.message));
     }
@@ -1957,7 +1845,7 @@ function handleOnCallSubmit(e) {
 
 function deleteOnCall(id) {
     if(confirm("Excluir esta escala de sobreaviso?")) {
-        db.ref('onCalls/' + id).remove()
+        supabase.from('on_calls').delete().eq('id', id)
             .catch(err => alert("Erro ao deletar escala: " + err.message));
     }
 }
@@ -2021,12 +1909,12 @@ function handleEventSubmit(e) {
     };
 
     if (editingId) {
-        db.ref('tasks/' + editingId).update(eventData)
+        supabase.from('tasks').update(eventData).eq('id', editingId)
             .then(() => closeEventModal()).catch(err => alert("Erro ao editar evento: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         eventData.id = newId;
-        db.ref('tasks/' + newId).set(eventData)
+        supabase.from('tasks').insert([eventData])
             .then(() => closeEventModal())
             .catch(err => alert("Erro ao cadastrar evento: " + err.message));
     }
