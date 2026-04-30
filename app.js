@@ -1,4 +1,8 @@
 // Supabase Configuration
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    alert("ERRO GLOBAL DETECTADO: " + msg + " (Linha: " + lineNo + ")");
+    return false;
+};
 const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
 const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
 if (!window.supabase) {
