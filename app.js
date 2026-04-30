@@ -1043,12 +1043,16 @@ function cycleStatus(taskId) {
     if (task.status === 'pending') nextStatus = 'progress';
     else if (task.status === 'progress') nextStatus = 'done';
     
-    supabaseClient.from('tasks').update({ status: nextStatus }).eq('id', taskId).catch(err => alert("Erro ao sincronizar status: " + err.message));
+    supabaseClient.from('tasks').update({ status: nextStatus }).eq('id', taskId).then(({error}) => {
+        if(error) alert("Erro ao sincronizar status: " + error.message);
+    });
 }
 
 function deleteTask(taskId) {
     if (confirm("Tem certeza que deseja excluir esta demanda permanentemente?")) {
-        supabaseClient.from('tasks').delete().eq('id', taskId).catch(err => alert("Erro ao excluir: " + err.message));
+        supabaseClient.from('tasks').delete().eq('id', taskId).then(({error}) => {
+            if(error) alert("Erro ao excluir: " + error.message);
+        });
     }
 }
 
@@ -1867,8 +1871,9 @@ function handleOnCallSubmit(e) {
 
 function deleteOnCall(id) {
     if(confirm("Excluir esta escala de sobreaviso?")) {
-        supabaseClient.from('on_calls').delete().eq('id', id)
-            .catch(err => alert("Erro ao deletar escala: " + err.message));
+        supabaseClient.from('on_calls').delete().eq('id', id).then(({error}) => {
+            if(error) alert("Erro ao deletar escala: " + error.message);
+        });
     }
 }
 
