@@ -70,7 +70,6 @@ let onCallSchedules = [];
 // Firebase force restore removido
 
 document.addEventListener("DOMContentLoaded", () => {
-    checkLogin();
     initApp();
 });
 
@@ -1985,23 +1984,4 @@ function openEventDetails(eventId) {
     document.getElementById('detailsModal').classList.add('active');
 }
 
-function checkLogin() {
-    if (sessionStorage.getItem('fiberPlannerLoggedIn') === 'true') {
-        const overlay = document.getElementById('loginOverlay');
-        if (overlay) overlay.style.display = 'none';
-    }
-}
-
-function handleLogin(event) {
-    event.preventDefault();
-    const user = document.getElementById('loginUsername').value.trim().toUpperCase();
-    const pass = document.getElementById('loginPassword').value.trim();
-    
-    if (user === 'BRD2020' && pass === 'Us*naf@rt$') {
-        sessionStorage.setItem('fiberPlannerLoggedIn', 'true');
-        document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('loginError').style.display = 'none';
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-    }
-}
+// Funções de login removidas
