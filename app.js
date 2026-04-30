@@ -1,7 +1,10 @@
 // Supabase Configuration
 const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
 const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+if (!window.supabase) {
+    alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique se você atualizou o index.html com o link correto do Supabase ou se sua rede está bloqueando o carregamento.");
+}
+const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
 let tasks = [];
 let initialTeams = [
@@ -1991,8 +1994,8 @@ function checkLogin() {
 
 function handleLogin(event) {
     event.preventDefault();
-    const user = document.getElementById('loginUsername').value;
-    const pass = document.getElementById('loginPassword').value;
+    const user = document.getElementById('loginUsername').value.trim().toUpperCase();
+    const pass = document.getElementById('loginPassword').value.trim();
     
     if (user === 'BRD2020' && pass === 'Us*naf@rt$') {
         sessionStorage.setItem('fiberPlannerLoggedIn', 'true');
