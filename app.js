@@ -1,6 +1,7 @@
 // Supabase Configuration
 window.onerror = function(msg, url, lineNo, columnNo, error) {
-    alert("ERRO GLOBAL DETECTADO: " + msg + " (Linha: " + lineNo + ")");
+    console.error("ERRO GLOBAL:", { msg, url, lineNo, columnNo, error });
+    alert(`ERRO GLOBAL: ${msg} (Linha ${lineNo})`);
     return false;
 };
 const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
@@ -8,8 +9,7 @@ const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
 if (!window.supabase) {
     alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique sua conexão ou se o index.html está atualizado.");
 }
-const { createClient } = window.supabase;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
 let tasks = [];
 let initialTeams = [
@@ -134,10 +134,10 @@ async function listenForChanges() {
     try {
         // 1. Carregar dados iniciais de todas as tabelas
         const [{data: teamsData}, {data: managersData}, {data: tasksData}, {data: onCallsData}] = await Promise.all([
-            supabase.from('teams').select('*'),
-            supabase.from('managers').select('*'),
-            supabase.from('tasks').select('*'),
-            supabase.from('on_calls').select('*')
+            supabaseClient.from('teams').select('*'),
+            supabaseClient.from('managers').select('*'),
+            supabaseClient.from('tasks').select('*'),
+            supabaseClient.from('on_calls').select('*')
         ]);
 
         // Atualizando arrays globais
@@ -166,7 +166,7 @@ async function listenForChanges() {
     }
 
     // 2. Inscrever-se para atualizações em tempo real (Realtime Sync)
-    supabase.channel('custom-all-channel')
+    supabaseClient.channel('custom-all-channel')
         .on(
             'postgres_changes',
             { event: '*', schema: 'public' },
@@ -1011,7 +1011,7 @@ function openStatusPopover(taskId, event) {
 function setStatusFromPopover(newStatus) {
     if (!currentStatusTaskId) return;
     
-    supabase.from('tasks').update({ status: newStatus }).eq('id', currentStatusTaskId).then(() => {
+    supabaseClient.from('tasks').update({ status: newStatus }).eq('id', currentStatusTaskId).then(() => {
         closeStatusPopover();
         
         if (document.getElementById('detailsModal') && document.getElementById('detailsModal').classList.contains('active')) {
@@ -1043,12 +1043,12 @@ function cycleStatus(taskId) {
     if (task.status === 'pending') nextStatus = 'progress';
     else if (task.status === 'progress') nextStatus = 'done';
     
-    supabase.from('tasks').update({ status: nextStatus }).eq('id', taskId).catch(err => alert("Erro ao sincronizar status: " + err.message));
+    supabaseClient.from('tasks').update({ status: nextStatus }).eq('id', taskId).catch(err => alert("Erro ao sincronizar status: " + err.message));
 }
 
 function deleteTask(taskId) {
     if (confirm("Tem certeza que deseja excluir esta demanda permanentemente?")) {
-        supabase.from('tasks').delete().eq('id', taskId).catch(err => alert("Erro ao excluir: " + err.message));
+        supabaseClient.from('tasks').delete().eq('id', taskId).catch(err => alert("Erro ao excluir: " + err.message));
     }
 }
 
@@ -1180,7 +1180,7 @@ function handleTaskSubmit(e) {
     
     if (editingId) {
         // Update existing task via Supabase
-        supabase.from('tasks').update({
+        supabaseClient.from('tasks').update({
             taskType, teamId, manager, date, dateEnd, timeStart, timeEnd, location, coordinates, contact, description
         }).eq('id', editingId)
           .then(({error}) => { if(error) throw error; closeModal(); })
@@ -1192,7 +1192,7 @@ function handleTaskSubmit(e) {
             id: newId, taskType, teamId, date, dateEnd, timeStart, timeEnd,
             location, coordinates, contact, description, status: 'pending', manager, isEvent: false
         };
-        supabase.from('tasks').insert([newTask])
+        supabaseClient.from('tasks').insert([newTask])
             .then(({error}) => { if(error) throw error; closeModal(); })
             .catch(err => alert("Erro ao cadastrar: " + err.message));
     }
@@ -1263,7 +1263,7 @@ function cycleStatusAndRefreshDetails(taskId) {
 
 function deleteTaskAndCloseDetails(taskId) {
     if (confirm("Tem certeza que deseja excluir esta demanda permanentemente?")) {
-        supabase.from('tasks').delete().eq('id', taskId).then(() => {
+        supabaseClient.from('tasks').delete().eq('id', taskId).then(() => {
             closeDetailsModal();
             // Also refresh the Day Modal actively
             const dayModal = document.getElementById('dayModal');
@@ -1629,12 +1629,12 @@ function handleTeamSubmit(e) {
     const group = document.getElementById('teamGroupInput').value;
     
     if (idField) {
-        supabase.from('teams').update({ name, group }).eq('id', idField)
+        supabaseClient.from('teams').update({ name, group }).eq('id', idField)
           .then(({error}) => { if(error) throw error; closeTeamForm(); })
           .catch(err => alert("Erro ao atualizar equipe: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        supabase.from('teams').insert([{ id: newId, name, group }])
+        supabaseClient.from('teams').insert([{ id: newId, name, group }])
           .then(({error}) => { if(error) throw error; closeTeamForm(); })
           .catch(err => alert("Erro ao cadastrar equipe: " + err.message));
     }
@@ -1642,7 +1642,9 @@ function handleTeamSubmit(e) {
 
 function deleteTeam(id) {
     if(confirm("Excluir esta equipe permanentemente? (Ficará sem nome nas demandas antigas)")) {
-        supabase.from('teams').delete().eq('id', id);
+        supabaseClient.from('teams').delete().eq('id', id)
+            .then(({error}) => { if(error) throw error; closeTeamForm(); })
+            .catch(err => alert("Erro ao excluir equipe: " + err.message));
     }
 }
 
@@ -1701,12 +1703,12 @@ function handleManagerSubmit(e) {
     const name = document.getElementById('managerNameInput').value;
     
     if (idField) {
-        supabase.from('managers').update({ name }).eq('id', idField)
+        supabaseClient.from('managers').update({ name }).eq('id', idField)
           .then(({error}) => { if(error) throw error; closeManagerForm(); })
           .catch(err => alert("Erro ao atualizar analista: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        supabase.from('managers').insert([{ id: newId, name }])
+        supabaseClient.from('managers').insert([{ id: newId, name }])
           .then(({error}) => { if(error) throw error; closeManagerForm(); })
           .catch(err => alert("Erro ao cadastrar analista: " + err.message));
     }
@@ -1714,7 +1716,9 @@ function handleManagerSubmit(e) {
 
 function deleteManager(id) {
     if(confirm("Excluir este gestor permanentemente? (Isso não alterará o nome nas demandas antigas já finalizadas)")) {
-        supabase.from('managers').delete().eq('id', id);
+        supabaseClient.from('managers').delete().eq('id', id)
+            .then(({error}) => { if(error) throw error; closeManagerForm(); })
+            .catch(err => alert("Erro ao excluir gestor: " + err.message));
     }
 }
 
@@ -1850,12 +1854,12 @@ function handleOnCallSubmit(e) {
     }
     
     if (idField) {
-        supabase.from('on_calls').update({ teamIds: selectedOptions, startDate, endDate }).eq('id', idField)
+        supabaseClient.from('on_calls').update({ teamIds: selectedOptions, startDate, endDate }).eq('id', idField)
           .then(({error}) => { if(error) throw error; closeOnCallForm(); })
           .catch(err => alert("Erro ao editar escala: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        supabase.from('on_calls').insert([{ id: newId, teamIds: selectedOptions, startDate, endDate }])
+        supabaseClient.from('on_calls').insert([{ id: newId, teamIds: selectedOptions, startDate, endDate }])
           .then(({error}) => { if(error) throw error; closeOnCallForm(); })
           .catch(err => alert("Erro ao salvar escala: " + err.message));
     }
@@ -1863,7 +1867,7 @@ function handleOnCallSubmit(e) {
 
 function deleteOnCall(id) {
     if(confirm("Excluir esta escala de sobreaviso?")) {
-        supabase.from('on_calls').delete().eq('id', id)
+        supabaseClient.from('on_calls').delete().eq('id', id)
             .catch(err => alert("Erro ao deletar escala: " + err.message));
     }
 }
@@ -1927,13 +1931,13 @@ function handleEventSubmit(e) {
     };
 
     if (editingId) {
-        supabase.from('tasks').update(eventData).eq('id', editingId)
+        supabaseClient.from('tasks').update(eventData).eq('id', editingId)
             .then(({error}) => { if(error) throw error; closeEventModal(); })
             .catch(err => alert("Erro ao editar evento: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
         eventData.id = newId;
-        supabase.from('tasks').insert([eventData])
+        supabaseClient.from('tasks').insert([eventData])
             .then(({error}) => { if(error) throw error; closeEventModal(); })
             .catch(err => alert("Erro ao cadastrar evento: " + err.message));
     }

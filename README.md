@@ -2,7 +2,7 @@
 
 **FiberPlanner** é um sistema web robusto e responsivo desenvolvido sob medida para a gestão e acompanhamento técnico de demandas em campo por equipes de manutenção e infraestrutura de fibra óptica. 
 
-Este projeto não depende de pesados frameworks complexos; seu foco principal está na leveza, escalabilidade imediata do lado do cliente *(Vanilla JS)* e na sincronização contínua de dados em tempo real utilizando Firebase.
+Este projeto não depende de pesados frameworks complexos; seu foco principal está na leveza, escalabilidade imediata do lado do cliente *(Vanilla JS)* e na sincronização contínua de dados em tempo real utilizando Supabase.
 
 ---
 
@@ -42,7 +42,7 @@ O ecossistema dispensa compilação pesada e é servido puramente pelos recursos
    - **Fontes:** Google Fonts (*Inter* - interface moderna).
    - **Ícones/SVGs:** Integrados nativamente.
 2. **Back-End (Banco de Dados e Sincronização):**
-   - **Google Firebase (Realtime Database):** Toda inserção de tarefas, exclusão ou edição é propagada dinamicamente entre múltiplos usuários simultaneamente. Usa a versão Compat do SDK (v10.8.0).
+   - **Google Supabase (Realtime Database):** Toda inserção de tarefas, exclusão ou edição é propagada dinamicamente entre múltiplos usuários simultaneamente. Usa a versão Compat do SDK (v10.8.0).
 3. **Módulos Terceirizados / CDNs:**
    - **Leaflet.js:** Biblioteca open-source para a geração de mapas interativos *(Maps via CartoCDN base)*.
    - **Chart.js:** Biblioteca injetada como CDN para geração dos gráficos de pizza no Dashboard.
@@ -56,9 +56,9 @@ A organização do código-fonte segue a separação lógica de conceitos:
 ```text
 /FiberPlanner
 │
-├── index.html        # Esqueleto do sistema, modais nativos e chamadas dos plugins injetáveis (CDN Firebase/Leaflet)
+├── index.html        # Esqueleto do sistema, modais nativos e chamadas dos plugins injetáveis (CDN Supabase/Leaflet)
 ├── styles.css        # Core do Design System. Regras responsivas, dark-theme e variáveis de estilos
-└── app.js            # Base principal e motor Javascript. Trata a Lógica do Firebase, eventos globais e injeção do DOM.
+└── app.js            # Base principal e motor Javascript. Trata a Lógica do Supabase, eventos globais e injeção do DOM.
     # (+ readme.md)   # Este arquivo
 ```
 
@@ -66,8 +66,8 @@ A organização do código-fonte segue a separação lógica de conceitos:
 
 ## 🚀 Como Utilizar o Sistema no Código (Para Desenvolvedores)
 
-### 1. Manipulação do Firebase
-Logo no início do arquivo `app.js`, o serviço é autenticado no Firebase pelas credenciais de configuração (`firebaseConfig`) já amarradas ao projeto principal. Toda nova consulta invoca os "listeners", os quais leem as mudanças e disparam o renderizador da tela ativamente via DB (e não *somente* via clique DOM). 
+### 1. Manipulação do Supabase
+Logo no início do arquivo `app.js`, o serviço é autenticado no Supabase pelas credenciais de configuração (`firebaseConfig`) já amarradas ao projeto principal. Toda nova consulta invoca os "listeners", os quais leem as mudanças e disparam o renderizador da tela ativamente via DB (e não *somente* via clique DOM). 
 
 *Sempre que quiser injetar ou verificar algo offline, você deve remover as chaves de conexão inicial e retornar a dependência estática, bem como desligar o `listenForChanges`.*
 
