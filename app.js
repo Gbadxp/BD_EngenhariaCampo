@@ -6,9 +6,10 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
 const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
 const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
 if (!window.supabase) {
-    alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique se você atualizou o index.html com o link correto do Supabase ou se sua rede está bloqueando o carregamento.");
+    alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique sua conexão ou se o index.html está atualizado.");
 }
-const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+const { createClient } = window.supabase;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 let tasks = [];
 let initialTeams = [
@@ -130,33 +131,39 @@ function getServiceColor(typeStr) {
 
 // Global Supabase Realtime Listener
 async function listenForChanges() {
-    // 1. Carregar dados iniciais de todas as tabelas
-    const [{data: teamsData}, {data: managersData}, {data: tasksData}, {data: onCallsData}] = await Promise.all([
-        supabase.from('teams').select('*'),
-        supabase.from('managers').select('*'),
-        supabase.from('tasks').select('*'),
-        supabase.from('on_calls').select('*')
-    ]);
+    try {
+        // 1. Carregar dados iniciais de todas as tabelas
+        const [{data: teamsData}, {data: managersData}, {data: tasksData}, {data: onCallsData}] = await Promise.all([
+            supabase.from('teams').select('*'),
+            supabase.from('managers').select('*'),
+            supabase.from('tasks').select('*'),
+            supabase.from('on_calls').select('*')
+        ]);
 
-    // Atualizando arrays globais
-    if (teamsData) initialTeams = teamsData.map(t => ({id: t.id, name: t.name, group: t.group}));
-    if (managersData) initialManagers = managersData;
-    if (tasksData) tasks = tasksData;
-    if (onCallsData) onCallSchedules = onCallsData;
+        // Atualizando arrays globais
+        if (teamsData) initialTeams = teamsData.map(t => ({id: String(t.id), name: t.name, group: t.group}));
+        if (managersData) initialManagers = managersData;
+        if (tasksData) tasks = tasksData;
+        if (onCallsData) onCallSchedules = onCallsData;
 
-    // Renderizar views iniciais
-    renderSidebarTeams();
-    if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
-        renderTeamManagerList();
+    } catch (err) {
+        console.error("Erro ao carregar dados do Supabase:", err);
+        alert("Erro de conexão com o banco de dados. Os dados podem não estar atualizados.");
+    } finally {
+        // Renderizar views iniciais independentemente de sucesso ou falha parcial
+        renderSidebarTeams();
+        if(document.getElementById('teamManagerModal') && document.getElementById('teamManagerModal').classList.contains('active')){
+            renderTeamManagerList();
+        }
+        renderManagerOptions();
+        if(document.getElementById('managerManagerModal') && document.getElementById('managerManagerModal').classList.contains('active')){
+            renderManagerList();
+        }
+        if(document.getElementById('onCallManagerModal') && document.getElementById('onCallManagerModal').classList.contains('active')){
+            renderOnCallList();
+        }
+        renderView();
     }
-    renderManagerOptions();
-    if(document.getElementById('managerManagerModal') && document.getElementById('managerManagerModal').classList.contains('active')){
-        renderManagerList();
-    }
-    if(document.getElementById('onCallManagerModal') && document.getElementById('onCallManagerModal').classList.contains('active')){
-        renderOnCallList();
-    }
-    renderView();
 
     // 2. Inscrever-se para atualizações em tempo real (Realtime Sync)
     supabase.channel('custom-all-channel')
@@ -1132,7 +1139,8 @@ function closeModal() {
 function handleTaskSubmit(e) {
     e.preventDefault();
     
-    const teamId = parseInt(document.getElementById('taskTeam').value);
+    // Removido parseInt() para manter o ID como string e não quebrar a tipagem do banco e do Javascript
+    const teamId = document.getElementById('taskTeam').value;
     const date = document.getElementById('taskDate').value;
     
     const managerEl = document.getElementById('taskManager');
