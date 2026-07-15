@@ -4,8 +4,8 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     alert(`ERRO GLOBAL: ${msg} (Linha ${lineNo})`);
     return false;
 };
-const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
-const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
+const supabaseUrl = "https://qeaznmuytwgfxkasxbqg.supabase.co";
+const supabaseKey = "sb_publishable_wsyRppDPHQQdUxsgOnzX3Q_BIZzt-nb";
 if (!window.supabase) {
     alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique sua conexão ou se o index.html está atualizado.");
 }
