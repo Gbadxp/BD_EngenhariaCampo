@@ -4,8 +4,8 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     alert(`ERRO GLOBAL: ${msg} (Linha ${lineNo})`);
     return false;
 };
-const supabaseUrl = "https://qeaznmuytwgfxkasxbqg.supabase.co";
-const supabaseKey = "sb_publishable_wsyRppDPHQQdUxsgOnzX3Q_BIZzt-nb";
+const supabaseUrl = "https://tibwsqscdednmkyxybtm.supabase.co";
+const supabaseKey = "sb_publishable_9MzGr43020DSQdUueni5sQ_S6FcHQ76";
 if (!window.supabase) {
     alert("ERRO CRÍTICO: O arquivo do Supabase não foi carregado! Verifique sua conexão ou se o index.html está atualizado.");
 }
@@ -1594,6 +1594,7 @@ function renderTeamManagerList() {
             <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <h4 style="font-size:1rem; color:var(--text-main); margin-bottom:0.3rem;">${team.name}</h4>
+                    ${team.cargo ? `<span style="font-size:0.75rem; color:var(--primary); font-weight:600; margin-right:0.4rem;">${team.cargo}</span>` : ''}
                     <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:12px;">${team.group || 'Geral'}</span>
                 </div>
                 <div style="display:flex; gap:0.5rem;">
@@ -1616,6 +1617,7 @@ function openTeamForm(teamIdStr = null) {
         if (team) {
             document.getElementById('editTeamId').value = team.id;
             document.getElementById('teamNameInput').value = team.name;
+            document.getElementById('teamCargoInput').value = team.cargo || '';
             document.getElementById('teamGroupInput').value = team.group || '';
             document.getElementById('teamFormTitle').innerText = 'Editar Equipe';
         }
@@ -1630,15 +1632,16 @@ function handleTeamSubmit(e) {
     e.preventDefault();
     const idField = document.getElementById('editTeamId').value;
     const name = document.getElementById('teamNameInput').value;
+    const cargo = document.getElementById('teamCargoInput').value;
     const group = document.getElementById('teamGroupInput').value;
     
     if (idField) {
-        supabaseClient.from('teams').update({ name, group }).eq('id', idField)
+        supabaseClient.from('teams').update({ name, cargo, group }).eq('id', idField)
           .then(({error}) => { if(error) throw error; closeTeamForm(); })
           .catch(err => alert("Erro ao atualizar equipe: " + err.message));
     } else {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2,4);
-        supabaseClient.from('teams').insert([{ id: newId, name, group }])
+        supabaseClient.from('teams').insert([{ id: newId, name, cargo, group }])
           .then(({error}) => { if(error) throw error; closeTeamForm(); })
           .catch(err => alert("Erro ao cadastrar equipe: " + err.message));
     }
