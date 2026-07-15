@@ -1598,7 +1598,13 @@ function renderTeamManagerList() {
         return;
     }
     
-    initialTeams.forEach(team => {
+    const sortedTeams = [...initialTeams].sort((a, b) => {
+        const groupCompare = (a.group || '').localeCompare(b.group || '', 'pt-BR', { sensitivity: 'base' });
+        if (groupCompare !== 0) return groupCompare;
+        return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' });
+    });
+    
+    sortedTeams.forEach(team => {
         list.innerHTML += `
             <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:1rem; display:flex; flex-direction:column; gap:0.6rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                 <div>
