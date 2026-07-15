@@ -1589,17 +1589,35 @@ function renderTeamManagerList() {
     const list = document.getElementById('teamsListContainer');
     list.innerHTML = '';
     
+    if (initialTeams.length === 0) {
+        list.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align:center; padding: 2.5rem; color:var(--text-muted); background:var(--bg-main); border-radius:10px; border:1px dashed var(--border-color);">
+                Nenhum técnico cadastrado ainda.
+            </div>
+        `;
+        return;
+    }
+    
     initialTeams.forEach(team => {
         list.innerHTML += `
-            <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:1rem; display:flex; flex-direction:column; gap:0.6rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                 <div>
-                    <h4 style="font-size:1rem; color:var(--text-main); margin-bottom:0.3rem;">${team.name}</h4>
-                    ${team.cargo ? `<span style="font-size:0.75rem; color:var(--primary); font-weight:600; margin-right:0.4rem;">${team.cargo}</span>` : ''}
-                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:12px;">${team.group || 'Geral'}</span>
+                    <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Técnico</span>
+                    <h4 style="font-size:1rem; color:var(--text-main); margin-top:0.15rem;">${team.name}</h4>
                 </div>
-                <div style="display:flex; gap:0.5rem;">
-                    <button class="btn btn-secondary" style="padding:0.4rem; border:none; background:rgba(37,99,235,0.1); color:var(--primary);" onclick="openTeamForm('${team.id}')">✏️ Editar</button>
-                    <button class="btn" style="padding:0.4rem; border:none; background:#fee2e2; color:#ef4444;" onclick="deleteTeam('${team.id}')">✕ Excluir</button>
+                <div>
+                    <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Cargo</span>
+                    <p style="font-size:0.9rem; color:var(--primary); font-weight:600; margin-top:0.15rem;">${team.cargo || '—'}</p>
+                </div>
+                <div>
+                    <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Equipe</span>
+                    <p style="font-size:0.85rem; color:var(--text-main); margin-top:0.15rem;">
+                        <span style="background:var(--bg-main); padding:0.2rem 0.6rem; border-radius:12px; font-weight:600;">${team.group || 'Geral'}</span>
+                    </p>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-top:0.4rem; border-top:1px dashed var(--border-color); padding-top:0.7rem;">
+                    <button class="btn btn-secondary w-full" style="padding:0.4rem; font-size:0.8rem;" onclick="openTeamForm('${team.id}')">✏️ Editar</button>
+                    <button class="btn w-full" style="padding:0.4rem; font-size:0.8rem; background:#fee2e2; color:#ef4444; border:none;" onclick="deleteTeam('${team.id}')">✕ Excluir</button>
                 </div>
             </div>
         `;
