@@ -287,6 +287,10 @@ body {
     animation: slideIn 0.3s ease;
 }
 
+.modal-wide {
+    max-width: 780px;
+}
+
 .modal-header {
     padding: 1.2rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
@@ -637,7 +641,7 @@ body {
         margin-bottom: 0;
     }
     
-    .modal {
+    .modal, .modal-wide {
         max-width: 95%;
         margin: 1rem;
         max-height: 90vh;
@@ -671,5 +675,9 @@ body {
     .cal-task-chip {
         font-size: 0.65rem;
         padding: 0.2rem;
+    }
+    
+    #teamsListContainer {
+        grid-template-columns: 1fr !important;
     }
 }
