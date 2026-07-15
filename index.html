@@ -333,14 +333,14 @@
 
     <!-- Teams Manager Modal -->
     <div class="modal-overlay" id="teamManagerModal">
-        <div class="modal">
+        <div class="modal modal-wide">
             <div class="modal-header">
                 <h3>Gerenciar Equipes</h3>
                 <button class="close-btn" onclick="closeTeamManager()">✕</button>
             </div>
             <div class="modal-body">
                 <button class="btn btn-primary w-full" style="margin-bottom: 1.5rem;" onclick="openTeamForm()">+ Adicionar Nova Equipe</button>
-                <div id="teamsListContainer" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                <div id="teamsListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- JS injected -->
                 </div>
             </div>
