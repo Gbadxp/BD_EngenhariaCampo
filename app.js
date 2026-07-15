@@ -141,7 +141,7 @@ async function listenForChanges() {
         ]);
 
         // Atualizando arrays globais
-        if (teamsData) initialTeams = teamsData.map(t => ({id: String(t.id), name: t.name, group: t.group}));
+        if (teamsData) initialTeams = teamsData.map(t => ({id: String(t.id), name: t.name, cargo: t.cargo, group: t.group}));
         if (managersData) initialManagers = managersData;
         if (tasksData) tasks = tasksData;
         if (onCallsData) onCallSchedules = onCallsData;
@@ -177,7 +177,7 @@ async function listenForChanges() {
                 const oldRec = payload.old;
 
                 if (table === 'teams') {
-                    const tData = newRec ? {id: newRec.id, name: newRec.name, group: newRec.group} : null;
+                    const tData = newRec ? {id: newRec.id, name: newRec.name, cargo: newRec.cargo, group: newRec.group} : null;
                     if (eventType === 'INSERT') initialTeams.push(tData);
                     if (eventType === 'UPDATE') initialTeams = initialTeams.map(t => t.id == newRec.id ? tData : t);
                     if (eventType === 'DELETE') initialTeams = initialTeams.filter(t => t.id != oldRec.id);
